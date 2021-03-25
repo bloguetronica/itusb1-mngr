@@ -1,4 +1,4 @@
-/* ITUSB1 device class for Qt - Version 1.0
+/* ITUSB1 device class for Qt - Version 2.0
    Copyright (c) 2020 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -113,7 +113,7 @@ bool ITUSB1Device::getGPIO1(int &errcnt, QString &errstr) const  // Gets the cur
         errcnt += 1;
         errstr.append("Failed control transfer (0xC0, 0x20).\n");
     }
-    return ((0x10 & control_buf_in[1]) != 0x00);  // Returns one if bit 5 of byte 1, which corresponds to the GPIO.2 pin, is not set to zero
+    return ((0x10 & control_buf_in[1]) != 0x00);  // Returns one if bit 4 of byte 1, which corresponds to the GPIO.1 pin, is not set to zero
 }
 
 bool ITUSB1Device::getGPIO2(int &errcnt, QString &errstr) const  // Gets the current value of the GPIO.2 pin on the CP2130
@@ -135,7 +135,7 @@ bool ITUSB1Device::getGPIO3(int &errcnt, QString &errstr) const  // Gets the cur
         errcnt += 1;
         errstr.append("Failed control transfer (0xC0, 0x20).\n");
     }
-    return ((0x40 & control_buf_in[1]) != 0x00);  // Returns one if bit 5 of byte 1, which corresponds to the GPIO.2 pin, is not set to zero
+    return ((0x40 & control_buf_in[1]) != 0x00);  // Returns one if bit 6 of byte 1, which corresponds to the GPIO.3 pin, is not set to zero
 }
 
 uint8_t ITUSB1Device::getMajorRelease(int &errcnt, QString &errstr) const  // Gets the major release version from the CP2130
@@ -147,6 +147,24 @@ uint8_t ITUSB1Device::getMajorRelease(int &errcnt, QString &errstr) const  // Ge
         errstr.append("Failed control transfer (0xC0, 0x60).\n");
     }
     return control_buf_in[6];
+}
+
+QString ITUSB1Device::getManufacturer(int &errcnt, QString &errstr) const  // Gets the manufacturer descriptor from the CP2130
+{
+    unsigned char control_buf_in[64];
+    if (libusb_control_transfer(handle_, 0xC0, 0x62, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in))
+    {
+        errcnt += 1;
+        errstr.append("Failed control transfer (0xC0, 0x62).\n");
+    }
+    QString manufacturer;
+    int end = control_buf_in[0] > 62 ? 62 : control_buf_in[0];
+    for (int i = 2; i < end; i += 2)  // Descriptor length is limited to 30 characters, or 60 bytes
+    {
+        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0)  // Filter out null characters
+            manufacturer.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+    }
+    return manufacturer;
 }
 
 uint8_t ITUSB1Device::getMaxPower(int &errcnt, QString &errstr) const  // Gets the maximum power descriptor from the CP2130
@@ -171,6 +189,24 @@ uint8_t ITUSB1Device::getMinorRelease(int &errcnt, QString &errstr) const  // Ge
     return control_buf_in[7];
 }
 
+QString ITUSB1Device::getProduct(int &errcnt, QString &errstr) const  // Gets the product descriptor from the CP2130
+{
+    unsigned char control_buf_in[64];
+    if (libusb_control_transfer(handle_, 0xC0, 0x66, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in))
+    {
+        errcnt += 1;
+        errstr.append("Failed control transfer (0xC0, 0x66).\n");
+    }
+    QString product;
+    int end = control_buf_in[0] > 62 ? 62 : control_buf_in[0];
+    for (int i = 2; i < end; i += 2)  // Descriptor length is limited to 30 characters, or 60 bytes
+    {
+        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0)  // Filter out null characters
+            product.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+    }
+    return product;
+}
+
 QString ITUSB1Device::getSerial(int &errcnt, QString &errstr) const  // Gets the serial descriptor from the CP2130
 {
     unsigned char control_buf_in[64];
@@ -180,9 +216,10 @@ QString ITUSB1Device::getSerial(int &errcnt, QString &errstr) const  // Gets the
         errstr.append("Failed control transfer (0xC0, 0x6A).\n");
     }
     QString serial;
-    for (int i = 2; i < control_buf_in[0] - 2; i += 2)
+    for (int i = 2; i < control_buf_in[0]; i += 2)
     {
-        serial.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0)  // Filter out null characters
+            serial.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
     }
     return serial;
 }
@@ -217,8 +254,8 @@ void ITUSB1Device::selectCS(uint8_t channel, int &errcnt, QString &errstr) const
 void ITUSB1Device::setGPIO1(bool value, int &errcnt, QString &errstr) const  // Sets the GPIO.1 pin on the CP2130 to a given value
 {
     unsigned char control_buf_out[4] = {
-        0x00, static_cast<uint8_t>(value << 4),  // Set the value of GPIO.2 to the intended value
-        0x00, 0x10                               // Set the mask so that only GPIO.2 is changed
+        0x00, static_cast<uint8_t>(value << 4),  // Set the value of GPIO.1 to the intended value
+        0x00, 0x10                               // Set the mask so that only GPIO.1 is changed
     };
     if (libusb_control_transfer(handle_, 0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), TR_TIMEOUT) != sizeof(control_buf_out))
     {
