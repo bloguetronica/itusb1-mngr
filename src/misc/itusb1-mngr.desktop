@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=ITUSB1 Manager
+Icon=itusb1-mngr
+Exec=itusb1-mngr
+Terminal=false
+Categories=Development;Electronics;
