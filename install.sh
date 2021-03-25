@@ -13,21 +13,24 @@ cp -f src/aboutdialog.ui /usr/local/src/itusb1-mngr/.
 cp -f src/devicewindow.cpp /usr/local/src/itusb1-mngr/.
 cp -f src/devicewindow.h /usr/local/src/itusb1-mngr/.
 cp -f src/devicewindow.ui /usr/local/src/itusb1-mngr/.
+cp -f src/GPL.txt /usr/local/src/itusb1-mngr/.
 cp -f src/icons/active64.png /usr/local/src/itusb1-mngr/icons/.
 cp -f src/icons/greyed64.png /usr/local/src/itusb1-mngr/icons/.
 cp -f src/icons/selected64.png /usr/local/src/itusb1-mngr/icons/.
 cp -f src/informationdialog.cpp /usr/local/src/itusb1-mngr/.
 cp -f src/informationdialog.h /usr/local/src/itusb1-mngr/.
 cp -f src/informationdialog.ui /usr/local/src/itusb1-mngr/.
-cp -f src/itusb1-mngr.pro /usr/local/src/itusb1-mngr/.
 cp -f src/itusb1device.cpp /usr/local/src/itusb1-mngr/.
 cp -f src/itusb1device.h /usr/local/src/itusb1-mngr/.
+cp -f src/itusb1-mngr.pro /usr/local/src/itusb1-mngr/.
+cp -f src/LGPL.txt /usr/local/src/itusb1-mngr/.
 cp -f src/libusb-extra.c /usr/local/src/itusb1-mngr/.
 cp -f src/libusb-extra.h /usr/local/src/itusb1-mngr/.
 cp -f src/main.cpp /usr/local/src/itusb1-mngr/.
 cp -f src/mainwindow.cpp /usr/local/src/itusb1-mngr/.
 cp -f src/mainwindow.h /usr/local/src/itusb1-mngr/.
 cp -f src/mainwindow.ui /usr/local/src/itusb1-mngr/.
+cp -f src/README.txt /usr/local/src/itusb1-mngr/.
 cp -f src/resources.qrc /usr/local/src/itusb1-mngr/.
 echo Building and installing application...
 cd /usr/local/src/itusb1-mngr
