@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>icons/active64.png</file>
+        <file>icons/greyed64.png</file>
+        <file>icons/selected64.png</file>
+    </qresource>
+</RCC>
