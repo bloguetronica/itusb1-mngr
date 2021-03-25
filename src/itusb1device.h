@@ -1,4 +1,4 @@
-/* ITUSB1 device class for Qt - Version 1.0
+/* ITUSB1 device class for Qt - Version 2.0
    Copyright (c) 2020 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -50,8 +50,10 @@ public:
     bool getGPIO2(int &errcnt, QString &errstr) const;
     bool getGPIO3(int &errcnt, QString &errstr) const;
     uint8_t getMajorRelease(int &errcnt, QString &errstr) const;
+    QString getManufacturer(int &errcnt, QString &errstr) const;
     uint8_t getMaxPower(int &errcnt, QString &errstr) const;
     uint8_t getMinorRelease(int &errcnt, QString &errstr) const;
+    QString getProduct(int &errcnt, QString &errstr) const;
     QString getSerial(int &errcnt, QString &errstr) const;
     bool isOpen() const;
     void reset(int &errcnt, QString &errstr) const;

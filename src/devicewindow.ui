@@ -209,7 +209,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>A&amp;vg.</string>
+       <string>Avg.</string>
       </property>
      </widget>
      <widget class="QRadioButton" name="radioButtonDisplayMin">
@@ -222,7 +222,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>&amp;Min.</string>
+       <string>Min.</string>
       </property>
      </widget>
      <widget class="QRadioButton" name="radioButtonDisplayMax">
@@ -235,7 +235,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Ma&amp;x.</string>
+       <string>Max.</string>
       </property>
      </widget>
     </widget>
@@ -304,6 +304,8 @@
     </property>
     <addaction name="actionInformation"/>
     <addaction name="separator"/>
+    <addaction name="actionSave"/>
+    <addaction name="separator"/>
     <addaction name="actionClose"/>
    </widget>
    <widget class="QMenu" name="menuOptions">
@@ -320,10 +322,13 @@
     </widget>
     <addaction name="menuUpdateRate"/>
     <addaction name="actionPersistent"/>
+    <addaction name="separator"/>
+    <addaction name="actionLog"/>
+    <addaction name="actionDelete"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>Help</string>
+     <string>&amp;Help</string>
     </property>
     <addaction name="actionAbout"/>
    </widget>
@@ -385,6 +390,30 @@
   <action name="actionAbout">
    <property name="text">
     <string>&amp;About ITUSB1 Manager</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>&amp;Save Logged Data</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionLog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Log Data</string>
+   </property>
+  </action>
+  <action name="actionDelete">
+   <property name="text">
+    <string>&amp;Delete Logged Data</string>
    </property>
   </action>
  </widget>
