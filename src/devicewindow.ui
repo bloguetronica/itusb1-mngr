@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>321</width>
-    <height>290</height>
+    <width>341</width>
+    <height>324</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>321</width>
-    <height>290</height>
+    <width>341</width>
+    <height>324</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>321</width>
-    <height>290</height>
+    <width>341</width>
+    <height>324</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -43,8 +43,8 @@
    <widget class="QGroupBox" name="groupBoxControl">
     <property name="geometry">
      <rect>
-      <x>215</x>
-      <y>5</y>
+      <x>230</x>
+      <y>10</y>
       <width>101</width>
       <height>251</height>
      </rect>
@@ -121,9 +121,9 @@
    <widget class="QGroupBox" name="groupBoxStatus">
     <property name="geometry">
      <rect>
-      <x>5</x>
-      <y>5</y>
-      <width>201</width>
+      <x>10</x>
+      <y>10</y>
+      <width>211</width>
       <height>251</height>
      </rect>
     </property>
@@ -133,7 +133,7 @@
     <widget class="QLCDNumber" name="lcdNumberCurrent">
      <property name="geometry">
       <rect>
-       <x>111</x>
+       <x>121</x>
        <y>61</y>
        <width>79</width>
        <height>29</height>
@@ -160,7 +160,7 @@
       <rect>
        <x>10</x>
        <y>67</y>
-       <width>95</width>
+       <width>105</width>
        <height>17</height>
       </rect>
      </property>
@@ -176,7 +176,7 @@
       <rect>
        <x>10</x>
        <y>100</y>
-       <width>181</width>
+       <width>191</width>
        <height>101</height>
       </rect>
      </property>
@@ -188,7 +188,7 @@
        <rect>
         <x>10</x>
         <y>35</y>
-        <width>76</width>
+        <width>81</width>
         <height>21</height>
        </rect>
       </property>
@@ -204,20 +204,20 @@
        <rect>
         <x>10</x>
         <y>65</y>
-        <width>76</width>
+        <width>81</width>
         <height>21</height>
        </rect>
       </property>
       <property name="text">
-       <string>Avg.</string>
+       <string>Average</string>
       </property>
      </widget>
      <widget class="QRadioButton" name="radioButtonDisplayMin">
       <property name="geometry">
        <rect>
-        <x>95</x>
+        <x>100</x>
         <y>35</y>
-        <width>76</width>
+        <width>81</width>
         <height>21</height>
        </rect>
       </property>
@@ -228,9 +228,9 @@
      <widget class="QRadioButton" name="radioButtonDisplayMax">
       <property name="geometry">
        <rect>
-        <x>95</x>
+        <x>100</x>
         <y>65</y>
-        <width>76</width>
+        <width>81</width>
         <height>21</height>
        </rect>
       </property>
@@ -242,7 +242,7 @@
     <widget class="QPushButton" name="pushButtonClear">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>120</x>
        <y>210</y>
        <width>81</width>
        <height>31</height>
@@ -257,7 +257,7 @@
       <rect>
        <x>10</x>
        <y>32</y>
-       <width>171</width>
+       <width>191</width>
        <height>17</height>
       </rect>
      </property>
@@ -279,7 +279,7 @@
       <rect>
        <x>10</x>
        <y>217</y>
-       <width>91</width>
+       <width>101</width>
        <height>17</height>
       </rect>
      </property>
@@ -289,13 +289,13 @@
     </widget>
    </widget>
   </widget>
-  <widget class="QMenuBar" name="menubar">
+  <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>321</width>
-     <height>29</height>
+     <width>341</width>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuDevice">
@@ -304,7 +304,7 @@
     </property>
     <addaction name="actionInformation"/>
     <addaction name="separator"/>
-    <addaction name="actionSave"/>
+    <addaction name="actionSaveData"/>
     <addaction name="separator"/>
     <addaction name="actionClose"/>
    </widget>
@@ -316,15 +316,18 @@
      <property name="title">
       <string>&amp;Update Rate</string>
      </property>
+     <addaction name="actionRate50"/>
      <addaction name="actionRate100"/>
      <addaction name="actionRate200"/>
      <addaction name="actionRate300"/>
+     <addaction name="actionRate500"/>
     </widget>
     <addaction name="menuUpdateRate"/>
     <addaction name="actionPersistent"/>
     <addaction name="separator"/>
-    <addaction name="actionLog"/>
-    <addaction name="actionDelete"/>
+    <addaction name="actionLogData"/>
+    <addaction name="actionDeleteData"/>
+    <addaction name="actionResetTime"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -336,6 +339,7 @@
    <addaction name="menuOptions"/>
    <addaction name="menuHelp"/>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
   <action name="actionClose">
    <property name="text">
     <string>&amp;Close</string>
@@ -392,7 +396,10 @@
     <string>&amp;About ITUSB1 Manager</string>
    </property>
   </action>
-  <action name="actionSave">
+  <action name="actionSaveData">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>&amp;Save Logged Data</string>
    </property>
@@ -400,20 +407,41 @@
     <string>Ctrl+S</string>
    </property>
   </action>
-  <action name="actionLog">
+  <action name="actionLogData">
    <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
     <bool>true</bool>
    </property>
    <property name="text">
     <string>&amp;Log Data</string>
    </property>
   </action>
-  <action name="actionDelete">
+  <action name="actionDeleteData">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>&amp;Delete Logged Data</string>
+   </property>
+  </action>
+  <action name="actionRate50">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>5&amp;0ms</string>
+   </property>
+  </action>
+  <action name="actionRate500">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;500ms</string>
+   </property>
+  </action>
+  <action name="actionResetTime">
+   <property name="text">
+    <string>&amp;Reset Time Count</string>
    </property>
   </action>
  </widget>

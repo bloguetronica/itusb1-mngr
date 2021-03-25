@@ -18,18 +18,31 @@
    Please feel free to contact me via e-mail: samuel.fmlourenco@gmail.com */
 
 
+#ifndef DATALOG_H
+#define DATALOG_H
+
 // Includes
-#include "aboutdialog.h"
-#include "ui_aboutdialog.h"
+#include <QString>
+#include <QVector>
+#include "datapoint.h"
 
-AboutDialog::AboutDialog(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::AboutDialog)
+class DataLog
 {
-    ui->setupUi(this);
-}
+private:
+    QVector<DataPoint> dataPoints_;
+    bool newData_;
 
-AboutDialog::~AboutDialog()
-{
-    delete ui;
-}
+public:
+    DataLog();
+
+    bool hasNewData() const;
+    bool isEmpty() const;
+    size_t size() const;
+    QString toCSVString() const;
+
+    void append(const DataPoint &datapt);
+    void clear();
+    void noNewData();
+};
+
+#endif // DATALOG_H

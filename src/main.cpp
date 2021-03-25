@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 2.0 for Debian Linux
-   Copyright (c) 2020 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.0 for Debian Linux
+   Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free
@@ -19,14 +19,19 @@
 
 
 // Includes
-#include "mainwindow.h"
 #include <QApplication>
+#include <QTranslator>
+#include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    QTranslator translator;
+    if (!translator.load("itusb1-mngr_" + QLocale::system().name(), ":/translations/translations")) {  // It the locale translation does not exist or cannot be loaded
+        translator.load("itusb1-mngr_en_US", ":/translations/translations");  // Fall back to the en-US translation
+    }
+    QCoreApplication::installTranslator(&translator);
     MainWindow w;
     w.show();
-
     return a.exec();
 }

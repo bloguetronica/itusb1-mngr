@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 2.0 for Debian Linux
-   Copyright (c) 2020 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.0 for Debian Linux
+   Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free
@@ -40,6 +40,16 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+// Instead of forcing any existing child windows to be closed, this will allow them to execute any pending tasks (implemented in version 3.0)
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    Q_UNUSED(event);
+    QList<QMainWindow *> childList = findChildren<QMainWindow *>();
+    for (QMainWindow *child : childList) {
+        child->close();  // This will "force" window closure, even if the user tries to cancel from the child's popup dialog
+    }
+}
+
 void MainWindow::on_actionAbout_triggered()
 {
     AboutDialog about;
@@ -48,17 +58,18 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_comboBoxDevices_currentIndexChanged(int index)
 {
-    if (index == 0)
+    if (index == 0) {
         ui->pushButtonOpen->setEnabled(false);
-    else
+    } else {
         ui->pushButtonOpen->setEnabled(true);
+    }
 }
 
 void MainWindow::on_pushButtonOpen_clicked()
 {
     QString serialstr = ui->comboBoxDevices->currentText();  // Extract the serial number from the chosen item in the combo box
     DeviceWindow *deview = new DeviceWindow(this);  // Create a new window that will close when its parent window closes
-    deview->setAttribute(Qt::WA_DeleteOnClose, true);  // This will not only free the allocated memory once the window is closed, but will also automatically call the destructor of the respective device, which in turn closes it
+    deview->setAttribute(Qt::WA_DeleteOnClose);  // This will not only free the allocated memory once the window is closed, but will also automatically call the destructor of the respective device, which in turn closes it
     deview->openDevice(serialstr);  // Access the selected device and prepare its view
     deview->show();  // Then open the corresponding window
 }
@@ -68,21 +79,18 @@ void MainWindow::on_pushButtonRefresh_clicked()
     refresh();
 }
 
-void MainWindow::refresh()  // Refreshes the combo box list
+// Refreshes the combo box list
+void MainWindow::refresh()
 {
     int errcnt = 0;
     QString errstr;
-    QStringList list = {"Select device..."};
-    list.append(listDevices(errcnt, errstr));
-    if (errcnt > 0)
-    {
-        QMessageBox errorList;
-        errorList.critical(this, tr("Critical error"), tr("%1\nThis is a critical error and execution will be aborted.").arg(errstr));
+    QStringList comboBoxList = {tr("Select device...")};
+    comboBoxList.append(ITUSB1Device::listDevices(errcnt, errstr));
+    if (errcnt > 0) {
+        QMessageBox::critical(this, tr("Critical Error"), tr("%1\nThis is a critical error and execution will be aborted.").arg(errstr));
         exit(EXIT_FAILURE);  // This error is critical because either libusb failed to initialize, or could not retrieve a list of devices
-    }
-    else
-    {
+    } else {
         ui->comboBoxDevices->clear();
-        ui->comboBoxDevices->addItems(list);
+        ui->comboBoxDevices->addItems(comboBoxList);
     }
 }

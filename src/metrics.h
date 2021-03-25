@@ -18,18 +18,30 @@
    Please feel free to contact me via e-mail: samuel.fmlourenco@gmail.com */
 
 
+#ifndef METRICS_H
+#define METRICS_H
+
 // Includes
-#include "aboutdialog.h"
-#include "ui_aboutdialog.h"
+#include <cstddef>
 
-AboutDialog::AboutDialog(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::AboutDialog)
+class Metrics
 {
-    ui->setupUi(this);
-}
+private:
+    double avg_;
+    float min_, max_, last_;
+    size_t nmeas_;
 
-AboutDialog::~AboutDialog()
-{
-    delete ui;
-}
+public:
+    Metrics();
+
+    float average() const;
+    float last() const;
+    float maximum() const;
+    float minimum() const;
+    size_t numberOfMeasurements() const;
+
+    void clear();
+    void update(float value);
+};
+
+#endif // METRICS_H

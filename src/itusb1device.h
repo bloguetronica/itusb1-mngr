@@ -1,5 +1,5 @@
-/* ITUSB1 device class for Qt - Version 2.0
-   Copyright (c) 2020 Samuel Lourenço
+/* ITUSB1 device class for Qt - Version 3.0
+   Copyright (c) 2020-2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
    under the terms of the GNU Lesser General Public License as published by
@@ -25,12 +25,6 @@
 #include <QStringList>  // Also includes QString
 #include <libusb-1.0/libusb.h>
 
-// Definitions
-const int CFRQ1500K = 0x03;  // Value corresponding to a clock frequency of 1.5MHz, applicable to configureSPIMode()
-const bool CPOL0 = false;    // Boolean corresponding to CPOL = 0, applicable to configureSPIMode()
-const bool CPHA0 = false;    // Boolean corresponding to CPHA = 0, applicable to configureSPIMode()
-const bool CSMODEPP = true;  // Boolean corresponding to chip select push-pull mode, applicable to configureSPIMode()
-
 class ITUSB1Device
 {
 private:
@@ -39,10 +33,23 @@ private:
     bool deviceOpen_, kernelAttached_;
 
 public:
+    //Class definitions
+    static const uint8_t CFRQ1500K = 0x03;  // Value corresponding to a clock frequency of 1.5MHz, applicable to SPIMode/configureSPIMode()
+    static const bool CPOL0 = false;    // Boolean corresponding to CPOL = 0, applicable to SPIMode/configureSPIMode()
+    static const bool CPHA0 = false;    // Boolean corresponding to CPHA = 0, applicable to SPIMode/configureSPIMode()
+    static const bool CSMODEPP = true;  // Boolean corresponding to chip select push-pull mode, applicable to SPIMode/configureSPIMode()
+
+    struct SPIMode {
+        bool csmode;
+        uint8_t cfrq;
+        bool cpol;
+        bool cpha;
+    };
+
     ITUSB1Device();
     ~ITUSB1Device();
 
-    void configureSPIMode(uint8_t channel, bool csmode, uint8_t cfrq, bool cpol, bool cpha, int &errcnt, QString &errstr) const;
+    void configureSPIMode(uint8_t channel, const SPIMode &mode, int &errcnt, QString &errstr) const;
     void disableCS(uint8_t channel, int &errcnt, QString &errstr) const;
     void disableSPIDelays(uint8_t channel, int &errcnt, QString &errstr) const;
     uint16_t getCurrent(int &errcnt, QString &errstr) const;
@@ -63,8 +70,8 @@ public:
 
     void close();
     int open(const QString &serial);
-};
 
-QStringList listDevices(int &errcnt, QString &errstr);
+    static QStringList listDevices(int &errcnt, QString &errstr);
+};
 
 #endif // ITUSB1DEVICE_H

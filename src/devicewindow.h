@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 2.0 for Debian Linux
-   Copyright (c) 2020 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.0 for Debian Linux
+   Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free
@@ -22,10 +22,14 @@
 #define DEVICEWINDOW_H
 
 // Includes
+#include <QCloseEvent>
+#include <QLabel>
 #include <QMainWindow>
 #include <QTime>
 #include <QTimer>
+#include "datalog.h"
 #include "itusb1device.h"
+#include "metrics.h"
 
 namespace Ui {
 class DeviceWindow;
@@ -41,14 +45,20 @@ public:
 
     void openDevice(const QString &serialstr);
 
+protected:
+    void closeEvent(QCloseEvent *event);
+
 private slots:
     void on_actionAbout_triggered();
-    void on_actionDelete_triggered();
+    void on_actionDeleteData_triggered();
     void on_actionInformation_triggered();
+    void on_actionRate50_triggered();
     void on_actionRate100_triggered();
     void on_actionRate200_triggered();
     void on_actionRate300_triggered();
-    void on_actionSave_triggered();
+    void on_actionRate500_triggered();
+    void on_actionResetTime_triggered();
+    void on_actionSaveData_triggered();
     void on_checkBoxData_clicked();
     void on_checkBoxPower_clicked();
     void on_pushButtonAttach_clicked();
@@ -59,27 +69,25 @@ private slots:
 
 private:
     Ui::DeviceWindow *ui;
-    bool windowEnabled_ = true;
-    double avg_;
-    float min_ = 1023.75, max_ = 0;
-    size_t nmeas_ = 0, erracc_ = 0;
-    struct datapoint
-    {
-        double time;
-        float curr;
-        bool up;
-        bool ud;
-        bool oc;
-    };
+    int erracc_ = 0;
     ITUSB1Device device_;
+    Metrics metrics_;
+    QLabel *labelLog_, *labelMeas_, *labelTime_;
     QString filepath_, serialstr_;
     QTime time_;
     QTimer *timer_;
-    QVector<datapoint> datapts_;
-    void clearValues();
+    DataLog log_;
+    void clearMetrics();
     void deleteData();
+    void disableView();
+    void logDataPoint(float current, bool up, bool ud, bool oc);
+    bool opCheck(const QString &op, int errcnt, QString errstr);
+    void resetDevice();
+    void resetTimeCount();
+    int saveDataPrompt();
+    void setLogActionsEnabled(bool value);
     void setupDevice();
-    void validateErrors();
+    void updateView(bool up, bool ud, bool oc);
 };
 
 #endif // DEVICEWINDOW_H
