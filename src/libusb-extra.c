@@ -1,5 +1,5 @@
-/* Extra functions for libusb - Version 1.1
-   Copyright (c) 2018 Samuel Lourenço
+/* Extra functions for libusb - Version 1.2
+   Copyright (c) 2018-2020 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
    under the terms of the GNU Lesser General Public License as published by
@@ -26,21 +26,17 @@ libusb_device_handle *libusb_open_device_with_vid_pid_serial(libusb_context *con
 {
     libusb_device **devs;
     libusb_device_handle *devhandle = NULL;
-    if (libusb_get_device_list(context, &devs) >= 0)  // If the device list is retrieved
-    {
+    if (libusb_get_device_list(context, &devs) >= 0) {  // If the device list is retrieved
         libusb_device *dev;
         size_t devcounter = 0;
-        while ((dev = devs[devcounter++]) != NULL)  // Walk through all the devices
-        {
+        while ((dev = devs[devcounter++]) != NULL) {  // Walk through all the devices
             struct libusb_device_descriptor desc;
-            if (libusb_get_device_descriptor(dev, &desc) == 0 && desc.idVendor == vid && desc.idProduct == pid && libusb_open(dev, &devhandle) == 0)  // If the device descriptor is retrieved, both PID and VID match, and if the device is successfully opened
-            {
+            if (libusb_get_device_descriptor(dev, &desc) == 0 && desc.idVendor == vid && desc.idProduct == pid && libusb_open(dev, &devhandle) == 0) {  // If the device descriptor is retrieved, both PID and VID match, and if the device is successfully opened
                 unsigned char str_desc[256];
                 libusb_get_string_descriptor_ascii(devhandle, desc.iSerialNumber, str_desc, sizeof(str_desc));  // Get the serial number string in ASCII format
-                if (strcmp((char *)str_desc, (char *)serial) == 0)  // If the serial number match
+                if (strcmp((char *)str_desc, (char *)serial) == 0) {  // If the serial number match
                     break;
-                else
-                {
+                } else {
                     libusb_close(devhandle);  // Close the device, since it is not the one with the corresponding serial number
                     devhandle = NULL;  // Set device handle value to null pointer
                 }

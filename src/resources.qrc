@@ -4,4 +4,9 @@
         <file>icons/greyed64.png</file>
         <file>icons/selected64.png</file>
     </qresource>
+    <qresource prefix="/translations">
+        <file>translations/itusb1-mngr_en.qm</file>
+        <file>translations/itusb1-mngr_en_US.qm</file>
+        <file>translations/itusb1-mngr_pt_PT.qm</file>
+    </qresource>
 </RCC>

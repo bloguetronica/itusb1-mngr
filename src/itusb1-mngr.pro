@@ -31,21 +31,26 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
+    datalog.cpp \
         main.cpp \
         mainwindow.cpp \
     itusb1device.cpp \
     libusb-extra.c \
     devicewindow.cpp \
     aboutdialog.cpp \
-    informationdialog.cpp
+    informationdialog.cpp \
+    metrics.cpp
 
 HEADERS += \
+    datalog.h \
+    datapoint.h \
         mainwindow.h \
     itusb1device.h \
     libusb-extra.h \
     devicewindow.h \
     aboutdialog.h \
-    informationdialog.h
+    informationdialog.h \
+    metrics.h
 
 FORMS += \
         mainwindow.ui \
@@ -53,7 +58,32 @@ FORMS += \
     aboutdialog.ui \
     informationdialog.ui
 
+TRANSLATIONS += \
+    translations/itusb1-mngr_en.ts \
+    translations/itusb1-mngr_en_US.ts \
+    translations/itusb1-mngr_pt_PT.ts
+
 LIBS += -lusb-1.0
 
 RESOURCES += \
     resources.qrc
+
+# Added installation option
+unix {
+    isEmpty(PREFIX) {
+        PREFIX = /usr/local
+    }
+    target.path = $$PREFIX/bin
+    icon.files += icons/itusb1-mngr.png
+    icon.path = $$PREFIX/share/icons/hicolor/128x128/apps
+    shortcut.files = misc/itusb1-mngr.desktop
+    shortcut.path = $$PREFIX/share/applications
+    INSTALLS += icon
+    INSTALLS += shortcut
+}
+
+!isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    icons/itusb1-mngr.png \
+    misc/itusb1-mngr.desktop

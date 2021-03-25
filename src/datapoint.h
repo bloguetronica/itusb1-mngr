@@ -18,18 +18,15 @@
    Please feel free to contact me via e-mail: samuel.fmlourenco@gmail.com */
 
 
-// Includes
-#include "aboutdialog.h"
-#include "ui_aboutdialog.h"
+#ifndef DATAPOINT_H
+#define DATAPOINT_H
 
-AboutDialog::AboutDialog(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::AboutDialog)
-{
-    ui->setupUi(this);
-}
+struct DataPoint {
+    double time;
+    float curr;
+    bool up;
+    bool ud;
+    bool oc;
+};
 
-AboutDialog::~AboutDialog()
-{
-    delete ui;
-}
+#endif // DATAPOINT_H

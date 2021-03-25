@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 2.0 for Debian Linux
-   Copyright (c) 2020 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.0 for Debian Linux
+   Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free
@@ -34,61 +34,69 @@ InformationDialog::~InformationDialog()
     delete ui;
 }
 
-void InformationDialog::setManufacturerLabelText(const QString &manufacturerstr)  // Sets the labelManufacturer text
+// Sets the labelManufacturer text
+void InformationDialog::setManufacturerLabelText(const QString &manufacturerstr)
 {
     QString manufacturer = manufacturerstr;
-    if (manufacturerstr.size() > 22)
-    {
+    if (manufacturerstr.size() > 22) {
         manufacturer.truncate(20);
         manufacturer.append("...");
     }
-    if (manufacturerstr != "Bloguetrónica")
+    if (manufacturerstr != "Bloguetrónica") {
         ui->labelManufacturer->setStyleSheet("color: red;");
+    }
     ui->labelManufacturer->setText(manufacturer);
 }
 
-void InformationDialog::setMaxPowerLabelText(uint8_t maxpower)  // Sets the labelMaxPower text
+// Sets the labelMaxPower text
+void InformationDialog::setMaxPowerLabelText(uint8_t maxpower)
 {
     QString maxpowerstr = QString::number(2 * maxpower);  // Maximum current value (reported as being the maximum power consumption by the USB-IF)
     maxpowerstr.append(QString(" [0x%1]").arg(maxpower, 2, 16, QChar('0')));  // Append the bMaxPower descriptor value between brackets
     ui->labelMaxPower->setText(maxpowerstr);
 }
 
-void InformationDialog::setProductLabelText(const QString &productstr)  // Sets the labelProduct text
+// Sets the labelProduct text
+void InformationDialog::setProductLabelText(const QString &productstr)
 {
     QString product = productstr;
-    if (productstr.size() > 22)
-    {
+    if (productstr.size() > 22) {
         product.truncate(20);
         product.append("...");
     }
-    if (productstr != "ITUSB1 USB Test Switch")
+    if (productstr != "ITUSB1 USB Test Switch") {
         ui->labelProduct->setStyleSheet("color: red;");
+    }
     ui->labelProduct->setText(product);
 }
 
-void InformationDialog::setRevisionLabelText(uint8_t majrelease, uint8_t minrelease)  // Sets the labelRevision text
+// Sets the labelRevision text
+void InformationDialog::setRevisionLabelText(uint8_t majrelease, uint8_t minrelease)
 {
     QString revision;
-    if (majrelease > 1 && majrelease <= 27)
+    if (majrelease > 1 && majrelease <= 27) {
         revision.append(QChar(majrelease + 'A' - 2));  // Append major revision letter (a major release number value of 2 corresponds to the letter "A" and so on)
-    if (majrelease == 1 || minrelease != 0)
+    }
+    if (majrelease == 1 || minrelease != 0) {
         revision.append(QString::number(minrelease));  // Append minor revision number
+    }
     revision.append(QString(" [0x%1]").arg(majrelease << 8 | minrelease, 4, 16, QChar('0')));  // Append the calculated bcdDevice descriptor value between brackets
-    if (majrelease == 0 || majrelease > 27)
+    if (majrelease == 0 || majrelease > 27) {
         ui->labelRevision->setStyleSheet("color: red;");
+    }
     ui->labelRevision->setText(revision);
 }
 
-void InformationDialog::setSerialLabelText(const QString &serialstr)  // Sets the labelSerial text
+// Sets the labelSerial text
+void InformationDialog::setSerialLabelText(const QString &serialstr)
 {
     QString serial = serialstr;
-    if (serialstr.size() > 22)
-    {
+    if (serialstr.size() > 22) {
         serial.truncate(20);
         serial.append("...");
     }
-    if (!serialstr.startsWith("IU1-") || serialstr.size() != 12)
+    if (!serialstr.startsWith("IU1-") || serialstr.size() != 12) {
         ui->labelSerial->setStyleSheet("color: red;");
+    }
     ui->labelSerial->setText(serial);
 }
