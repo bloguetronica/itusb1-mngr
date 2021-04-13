@@ -181,7 +181,7 @@ void DeviceWindow::on_actionResetTime_triggered()
         int qmret = QMessageBox::question(this, tr("Reset Time Count?"), tr("This action, besides resetting the elapsed time count, will also delete any previously acquired data points.\n\nDo you wish to proceed?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
         if (qmret == QMessageBox::Yes) {  // If user clicked "Yes"
             deleteData();  // Delete acquired data points
-            if (device_.isOpen()) {  // This condition is essential so the timer won't be restarted if, in the meantime, the device gets disconnected - In effect this prevents a segmentation fault!
+            if (device_.isOpen()) {  // This condition is essential so the timer won't be restarted if, in the meantime, the device gets disconnected - In effect this prevents further errors!
                 resetTimeCount();  // Reset time count - This will restart the timer too!
             }
         }
@@ -249,7 +249,7 @@ void DeviceWindow::on_pushButtonReset_clicked()
     } else {
         int qmret = QMessageBox::question(this, tr("Reset Device?"), tr("This action, besides resetting the device, will also delete any previously acquired data points.\n\nDo you wish to proceed?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);  // Confirmation added in version 3.0
         if (qmret == QMessageBox::Yes) {  // If user clicked "Yes"
-            if (device_.isOpen()) {  // This condition is required to prevent a segmentation fault if, in the meantime, the device gets disconnected
+            if (device_.isOpen()) {  // This condition is required to prevent multiple errors if, in the meantime, the device gets disconnected
                 resetDevice();
             } else {
                 deleteData();  // Delete all data points, as an alternative to resetDevice()
@@ -325,7 +325,7 @@ bool DeviceWindow::opCheck(const QString &op, int errcnt, QString errstr)
         QMessageBox::critical(this, tr("Error"), tr("%1 operation returned the following error(s):\n– %2", "", errcnt).arg(op, errstr.replace("\n", "\n– ")));
         erracc_ += errcnt;
         if (erracc_ > 10) {  // If the session accumulated more than 10 errors (this is validateErrors(), in essence)
-            timer_->stop();  // This prevents a segmentation fault
+            timer_->stop();  // This prevents further errors
             QMessageBox::critical(this, tr("Error"), tr("Detected too many errors. Device may not be properly connected.\n\nThe device window will be disabled."));
             disableView();  // Disable device window
             device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful
@@ -340,7 +340,7 @@ bool DeviceWindow::opCheck(const QString &op, int errcnt, QString errstr)
 // Resets the device (added in version 3.0, as a refactor)
 void DeviceWindow::resetDevice()
 {
-    timer_->stop();  // Stop the update timer momentarily, in order to avoid a segmentation fault if the device gets disconnected during a reset, or other unexpected behavior (bug fix added in version 2.0)
+    timer_->stop();  // Stop the update timer momentarily, in order to avoid recurrent errors if the device gets disconnected during a reset, or other unexpected behavior (bug fix added in version 2.0)
     clearMetrics();
     deleteData();  // As of version 3.0, all data points are deleted before a reset is issued to the device, so that the window may close if there is a problem - Effectively, this will bypass the inner workings of closeEvent()!
     ui->labelOCFault->clear();  // Clear "OC fault!" warning, if applicable
