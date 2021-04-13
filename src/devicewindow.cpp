@@ -198,7 +198,7 @@ void DeviceWindow::on_checkBoxData_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    device_.setGPIO2(!ui->checkBoxData->isChecked(), errcnt, errstr);
+    device_.switchUSBData(ui->checkBoxData->isChecked(), errcnt, errstr);
     opCheck(tr("data-switch-op"), errcnt, errstr);  // The string "data-switch-op" should be translated to "Data switch"
 }
 
@@ -206,7 +206,7 @@ void DeviceWindow::on_checkBoxPower_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    device_.setGPIO1(!ui->checkBoxPower->isChecked(), errcnt, errstr);
+    device_.switchUSBPower(ui->checkBoxPower->isChecked(), errcnt, errstr);
     opCheck(tr("power-switch-op"), errcnt, errstr);  // The string "power-switch-op" should be translated to "Power switch"
 }
 
@@ -214,17 +214,7 @@ void DeviceWindow::on_pushButtonAttach_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    if (device_.getGPIO1(errcnt, errstr) != device_.getGPIO2(errcnt, errstr)) {  // If GPIO.1 and GPIO.2 pins do not match in value, indicating an unusual state
-        device_.setGPIO1(true, errcnt, errstr);  // Set GPIO.1 to a logical high to switch off VBUS first
-        device_.setGPIO2(true, errcnt, errstr);  // Set GPIO.2 to a logical high to disconnect the data lines
-        QThread::msleep(100);  // Wait 100ms to allow for device shutdown
-    }
-    if (device_.getGPIO1(errcnt, errstr) && device_.getGPIO2(errcnt, errstr)) {  // If GPIO.1 and GPIO.2 are both set to a logical high
-        device_.setGPIO1(false, errcnt, errstr);  // Set GPIO.1 to a logical low to switch VBUS on
-        QThread::msleep(100);  // Wait 100ms in order to emulate a manual attachment of the device
-        device_.setGPIO2(false, errcnt, errstr);  // Set GPIO.2 to a logical low to connect the data lines
-        QThread::msleep(100);  // Wait 100ms so that device enumeration process can, at least, start (this is not enough to guarantee enumeration, though)
-    }
+    device_.attach(errcnt, errstr);
     if (opCheck(tr("attach-op"), errcnt, errstr)) {  // If error check passes  (the string "attach-op" should be translated to "Attach")
         // Added in version 3.0, for improved responsiveness
         ui->checkBoxPower->setChecked(true);
@@ -243,12 +233,7 @@ void DeviceWindow::on_pushButtonDetach_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    if (!device_.getGPIO1(errcnt, errstr) || !device_.getGPIO2(errcnt, errstr)) {  // If GPIO.1 or GPIO.2, or both, are set to a logical low
-        device_.setGPIO2(true, errcnt, errstr);  // Set GPIO.2 to a logical high so that the data lines are disconnected
-        QThread::msleep(100);  // Wait 100ms in order to emulate a manual detachment of the device
-        device_.setGPIO1(true, errcnt, errstr);  // Set GPIO.1 to a logical high to switch VBUS off
-        QThread::msleep(100);  // Wait 100ms to allow for device shutdown
-    }
+    device_.detach(errcnt, errstr);
     if (opCheck(tr("detach-op"), errcnt, errstr)) {  // If error check passes (the string "detach-op" should be translated to "Detach")
         // Added in version 3.0, for improved responsiveness
         ui->checkBoxPower->setChecked(false);
@@ -279,19 +264,11 @@ void DeviceWindow::update()
     // No verification is done here since version 2.0
     int errcnt = 0;
     QString errstr;
-    bool up = !device_.getGPIO1(errcnt, errstr);  // Get the current value of the GPIO.1 pin, which corresponds to the !UPEN signal, and negate it
-    bool ud = !device_.getGPIO2(errcnt, errstr);  // Get the current value of the GPIO.2 pin, which corresponds to the !UDEN signal, and negate it
-    bool oc = !device_.getGPIO3(errcnt, errstr);  // Get the current value of the GPIO.3 pin, which corresponds to the !UPOC signal, and negate it
-    device_.selectCS(0, errcnt, errstr);  // Enable the chip select corresponding to channel 0, and disable any others
-    device_.getCurrent(errcnt, errstr);  // Discard this reading, as it will reflect a past measurement
-    uint16_t curr_code_sum = 0;
-    for (int i = 0; i < 5; ++i) {
-        curr_code_sum += device_.getCurrent(errcnt, errstr);  // Read the raw value (from the LTC2312 on channel 0) and add it to the sum
-    }
-    QThread::usleep(100);  // Wait 100us, in order to prevent possible errors while disabling the chip select (workaround)
-    device_.disableCS(0, errcnt, errstr);  // Disable the previously enabled chip select
+    bool up = device_.getUSBPowerStatus(errcnt, errstr);
+    bool ud = device_.getUSBDataStatus(errcnt, errstr);
+    bool oc = device_.getOverCurrentStatus(errcnt, errstr);
+    float current = device_.getCurrent(errcnt, errstr);
     if (opCheck(tr("update-op"), errcnt, errstr)) {  // Update values if no errors occur (implemented since version 2.0, and refactored in version 3.0)
-        float current = curr_code_sum / 20.0;  // Calculate the average current out of five readings for each point (current = curr_code / 4.0 for a single reading)
         if (ui->actionLogData->isChecked()) {
             logDataPoint(current, up, ud, oc);
         }
@@ -443,17 +420,7 @@ void DeviceWindow::setupDevice()
 {
     int errcnt = 0;
     QString errstr;
-    ITUSB1Device::SPIMode mode;
-    mode.csmode = ITUSB1Device::CSMODEPP;  // Chip select pin mode regarding channel 0 is push-pull
-    mode.cfrq = ITUSB1Device::CFRQ1500K;  // SPI clock frequency set to 1.5MHz
-    mode.cpol = ITUSB1Device::CPOL0;  // SPI clock polarity is active high (CPOL = 0)
-    mode.cpha = ITUSB1Device::CPHA0;  // SPI data is valid on each rising edge (CPHA = 0)
-    device_.configureSPIMode(0, mode, errcnt, errstr);  // Configure SPI mode for channel 0, using the above settings
-    device_.disableSPIDelays(0, errcnt, errstr);  // Disable all SPI delays for channel 0
-    device_.selectCS(0, errcnt, errstr);  // Enable the chip select corresponding to channel 0, and disable any others
-    device_.getCurrent(errcnt, errstr);  // Discard this first reading - This also wakes up the LTC2312, if in nap or sleep mode!
-    QThread::usleep(1100);  // Wait 1.1ms to ensure that the LTC2312 is awake, and also to prevent possible errors while disabling the chip select (workaround)
-    device_.disableCS(0, errcnt, errstr);  // Disable the previously enabled chip select
+    device_.setup(errcnt, errstr);
     if (errcnt > 0) {
         errstr.chop(1);  // Remove the last character, which is always a newline
         QMessageBox::critical(this, tr("Error"), tr("Setup operation returned the following error(s):\n– %1\n\nPlease try accessing the device again.", "", errcnt).arg(errstr.replace("\n", "\n– ")));

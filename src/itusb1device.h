@@ -23,50 +23,36 @@
 
 // Includes
 #include <QStringList>  // Also includes QString
-#include <libusb-1.0/libusb.h>
+#include "cp2130.h"
 
 class ITUSB1Device
 {
 private:
-    libusb_context *context_;
-    libusb_device_handle *handle_;
-    bool deviceOpen_, kernelAttached_;
+    CP2130 cp2130_;
+
+    quint16 getRawCurrent(int &errcnt, QString &errstr) const;
 
 public:
-    //Class definitions
-    static const uint8_t CFRQ1500K = 0x03;  // Value corresponding to a clock frequency of 1.5MHz, applicable to SPIMode/configureSPIMode()
-    static const bool CPOL0 = false;    // Boolean corresponding to CPOL = 0, applicable to SPIMode/configureSPIMode()
-    static const bool CPHA0 = false;    // Boolean corresponding to CPHA = 0, applicable to SPIMode/configureSPIMode()
-    static const bool CSMODEPP = true;  // Boolean corresponding to chip select push-pull mode, applicable to SPIMode/configureSPIMode()
-
-    struct SPIMode {
-        bool csmode;
-        uint8_t cfrq;
-        bool cpol;
-        bool cpha;
-    };
-
     ITUSB1Device();
     ~ITUSB1Device();
 
-    void configureSPIMode(uint8_t channel, const SPIMode &mode, int &errcnt, QString &errstr) const;
-    void disableCS(uint8_t channel, int &errcnt, QString &errstr) const;
-    void disableSPIDelays(uint8_t channel, int &errcnt, QString &errstr) const;
-    uint16_t getCurrent(int &errcnt, QString &errstr) const;
-    bool getGPIO1(int &errcnt, QString &errstr) const;
-    bool getGPIO2(int &errcnt, QString &errstr) const;
-    bool getGPIO3(int &errcnt, QString &errstr) const;
-    uint8_t getMajorRelease(int &errcnt, QString &errstr) const;
+    void attach(int &errcnt, QString &errstr) const;
+    void detach(int &errcnt, QString &errstr) const;
+    float getCurrent(int &errcnt, QString &errstr) const;
+    quint8 getMajorRelease(int &errcnt, QString &errstr) const;
     QString getManufacturer(int &errcnt, QString &errstr) const;
-    uint8_t getMaxPower(int &errcnt, QString &errstr) const;
-    uint8_t getMinorRelease(int &errcnt, QString &errstr) const;
+    quint8 getMaxPower(int &errcnt, QString &errstr) const;
+    quint8 getMinorRelease(int &errcnt, QString &errstr) const;
+    bool getOverCurrentStatus(int &errcnt, QString &errstr) const;
     QString getProduct(int &errcnt, QString &errstr) const;
     QString getSerial(int &errcnt, QString &errstr) const;
+    bool getUSBDataStatus(int &errcnt, QString &errstr) const;
+    bool getUSBPowerStatus(int &errcnt, QString &errstr) const;
     bool isOpen() const;
     void reset(int &errcnt, QString &errstr) const;
-    void selectCS(uint8_t channel, int &errcnt, QString &errstr) const;
-    void setGPIO1(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO2(bool value, int &errcnt, QString &errstr) const;
+    void setup(int &errcnt, QString &errstr) const;
+    void switchUSBData(bool value, int &errcnt, QString &errstr) const;
+    void switchUSBPower(bool value, int &errcnt, QString &errstr) const;
 
     void close();
     int open(const QString &serial);

@@ -31,6 +31,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
+    cp2130.cpp \
     datalog.cpp \
         main.cpp \
         mainwindow.cpp \
@@ -42,6 +43,7 @@ SOURCES += \
     metrics.cpp
 
 HEADERS += \
+    cp2130.h \
     datalog.h \
     datapoint.h \
         mainwindow.h \

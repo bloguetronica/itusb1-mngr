@@ -23,9 +23,9 @@
 
 // Includes
 #include <QCloseEvent>
+#include <QElapsedTimer>
 #include <QLabel>
 #include <QMainWindow>
-#include <QTime>
 #include <QTimer>
 #include "datalog.h"
 #include "itusb1device.h"
@@ -72,9 +72,9 @@ private:
     int erracc_ = 0;
     ITUSB1Device device_;
     Metrics metrics_;
+    QElapsedTimer time_;  // QTime start() and elapsed() are now obsolete (version 3.1)
     QLabel *labelLog_, *labelMeas_, *labelTime_;
     QString filepath_, serialstr_;
-    QTime time_;
     QTimer *timer_;
     DataLog log_;
     void clearMetrics();
