@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.2.3 for Debian Linux
+/* CP2130 class for Qt - Version 0.3.0 for Debian Linux
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -77,6 +77,8 @@ public:
     int controlTransfer(quint8 bmRequestType, quint8 bRequest, quint16 wValue, quint16 wIndex, unsigned char *data, quint16 wLength, int &errcnt, QString &errstr) const;
     void disableCS(quint8 channel, int &errcnt, QString &errstr) const;
     void disableSPIDelays(quint8 channel, int &errcnt, QString &errstr) const;
+    void enableCS(quint8 channel, int &errcnt, QString &errstr) const;
+    bool getCS(quint8 channel, int &errcnt, QString &errstr) const;
     bool getGPIO1(int &errcnt, QString &errstr) const;
     bool getGPIO2(int &errcnt, QString &errstr) const;
     bool getGPIO3(int &errcnt, QString &errstr) const;

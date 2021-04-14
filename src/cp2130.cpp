@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.2.3 for Debian Linux
+/* CP2130 class for Qt - Version 0.3.0 for Debian Linux
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -64,7 +64,7 @@ void CP2130::configureSPIDelays(quint8 channel, const SPIDelays &delays, int &er
         static_cast<quint8>(delays.pstastdly >> 8), static_cast<quint8>(delays.pstastdly),                          // Post-assert delay
         static_cast<quint8>(delays.prdastdly >> 8), static_cast<quint8>(delays.prdastdly)                           // Pre-deassert delay
     };
-    quint16 size = sizeof(controlBufferOut);
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
     if (controlTransfer(0x40, 0x33, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x33).\n"));
@@ -78,7 +78,7 @@ void CP2130::configureSPIMode(quint8 channel, const SPIMode &mode, int &errcnt, 
         channel,                                                                                      // Selected channel
         static_cast<quint8>(mode.cpha << 5 | mode.cpol << 4 | mode.csmode << 3 | (0x07 & mode.cfrq))  // Control word (specified chip select mode, clock frequency, polarity and phase)
     };
-    quint16 size = sizeof(controlBufferOut);
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
     if (controlTransfer(0x40, 0x31, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x31).\n"));
@@ -99,7 +99,7 @@ int CP2130::controlTransfer(quint8 bmRequestType, quint8 bRequest, quint16 wValu
     return retval;
 }
 
-// Disables the chip select corresponding to the target channel
+// Disables the chip select of the target channel
 void CP2130::disableCS(quint8 channel, int &errcnt, QString &errstr) const
 {
     if (channel > 10) {
@@ -110,7 +110,7 @@ void CP2130::disableCS(quint8 channel, int &errcnt, QString &errstr) const
             channel,  // Selected channel
             0x00      // Corresponding chip select disabled
         };
-        quint16 size = sizeof(controlBufferOut);
+        quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
         if (controlTransfer(0x40, 0x25, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
             errcnt += 1;
             errstr.append(QObject::tr("Failed control transfer (0x40, 0x25).\n"));
@@ -132,7 +132,7 @@ void CP2130::disableSPIDelays(quint8 channel, int &errcnt, QString &errstr) cons
             0x00, 0x00,  // post-assert and
             0x00, 0x00   // pre-deassert delays all set to 0us
         };
-        quint16 size = sizeof(controlBufferOut);
+        quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
         if (controlTransfer(0x40, 0x33, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
             errcnt += 1;
             errstr.append(QObject::tr("Failed control transfer (0x40, 0x33).\n"));
@@ -140,157 +140,208 @@ void CP2130::disableSPIDelays(quint8 channel, int &errcnt, QString &errstr) cons
     }
 }
 
-// Gets the current value of the GPIO.1 pin on the CP2130
+// Enables the chip select of the target channel
+void CP2130::enableCS(quint8 channel, int &errcnt, QString &errstr) const
+{
+    if (channel > 10) {
+        errcnt += 1;
+        errstr.append(QObject::tr("In enableCS(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+    } else {
+        unsigned char controlBufferOut[2] = {
+            channel,  // Selected channel
+            0x01      // Corresponding chip select enabled
+        };
+        quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+        if (controlTransfer(0x40, 0x25, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
+            errcnt += 1;
+            errstr.append(QObject::tr("Failed control transfer (0x40, 0x25).\n"));
+        }
+    }
+}
+
+// Returns the chip select status for a given channel
+bool CP2130::getCS(quint8 channel, int &errcnt, QString &errstr) const
+{
+    bool retval;
+    if (channel > 10) {
+        errcnt += 1;
+        errstr.append(QObject::tr("In getCS(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        retval = false;
+    } else {
+        unsigned char controlBufferIn[4];
+        quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+        if (controlTransfer(0xC0, 0x24, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
+            errcnt += 1;
+            errstr.append(QObject::tr("Failed control transfer (0xC0, 0x24).\n"));
+        }
+        retval = ((0x01 << channel & (controlBufferIn[0] << 8 | controlBufferIn[1])) != 0x00);
+    }
+    return retval;
+}
+
+// Returns the current value of the GPIO.1 pin on the CP2130
 bool CP2130::getGPIO1(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x10 & control_buf_in[1]) != 0x00);  // Returns one if bit 4 of byte 1, which corresponds to the GPIO.1 pin, is not set to zero
+    return ((0x10 & controlBufferIn[1]) != 0x00);  // Returns one if bit 4 of byte 1, which corresponds to the GPIO.1 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.2 pin on the CP2130
+// Returns the current value of the GPIO.2 pin on the CP2130
 bool CP2130::getGPIO2(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x20 & control_buf_in[1]) != 0x00);  // Returns one if bit 5 of byte 1, which corresponds to the GPIO.2 pin, is not set to zero
+    return ((0x20 & controlBufferIn[1]) != 0x00);  // Returns one if bit 5 of byte 1, which corresponds to the GPIO.2 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.3 pin on the CP2130
+// Returns the current value of the GPIO.3 pin on the CP2130
 bool CP2130::getGPIO3(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x40 & control_buf_in[1]) != 0x00);  // Returns one if bit 6 of byte 1, which corresponds to the GPIO.3 pin, is not set to zero
+    return ((0x40 & controlBufferIn[1]) != 0x00);  // Returns one if bit 6 of byte 1, which corresponds to the GPIO.3 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.4 pin on the CP2130
+// Returns the current value of the GPIO.4 pin on the CP2130
 bool CP2130::getGPIO4(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x80 & control_buf_in[1]) != 0x00);  // Returns one if bit 7 of byte 1, which corresponds to the GPIO.4 pin, is not set to zero
+    return ((0x80 & controlBufferIn[1]) != 0x00);  // Returns one if bit 7 of byte 1, which corresponds to the GPIO.4 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.5 pin on the CP2130
+// Returns the current value of the GPIO.5 pin on the CP2130
 bool CP2130::getGPIO5(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x01 & control_buf_in[0]) != 0x00);  // Returns one if bit 0 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((0x01 & controlBufferIn[0]) != 0x00);  // Returns one if bit 0 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.6 pin on the CP2130
+// Returns the current value of the GPIO.6 pin on the CP2130
 bool CP2130::getGPIO6(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x04 & control_buf_in[0]) != 0x00);  // Returns one if bit 2 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((0x04 & controlBufferIn[0]) != 0x00);  // Returns one if bit 2 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.7 pin on the CP2130
+// Returns the current value of the GPIO.7 pin on the CP2130
 bool CP2130::getGPIO7(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x08 & control_buf_in[0]) != 0x00);  // Returns one if bit 3 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((0x08 & controlBufferIn[0]) != 0x00);  // Returns one if bit 3 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.8 pin on the CP2130
+// Returns the current value of the GPIO.8 pin on the CP2130
 bool CP2130::getGPIO8(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x10 & control_buf_in[0]) != 0x00);  // Returns one if bit 4 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((0x10 & controlBufferIn[0]) != 0x00);  // Returns one if bit 4 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.9 pin on the CP2130
+// Returns the current value of the GPIO.9 pin on the CP2130
 bool CP2130::getGPIO9(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x20 & control_buf_in[0]) != 0x00);  // Returns one if bit 5 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((0x20 & controlBufferIn[0]) != 0x00);  // Returns one if bit 5 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.10 pin on the CP2130
+// Returns the current value of the GPIO.10 pin on the CP2130
 bool CP2130::getGPIO10(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[2];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
     }
-    return ((0x40 & control_buf_in[0]) != 0x00);  // Returns one if bit 6 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((0x40 & controlBufferIn[0]) != 0x00);  // Returns one if bit 6 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
 }
 
 // Gets the major release version from the CP2130 OTP ROM
 quint8 CP2130::getMajorRelease(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[9];
-    if (controlTransfer(0xC0, 0x60, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[9];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x60, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x60).\n"));
     }
-    return control_buf_in[6];
+    return controlBufferIn[6];
 }
 
 // Gets the manufacturer descriptor from the CP2130 OTP ROM
 QString CP2130::getManufacturer(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[64];
-    if (controlTransfer(0xC0, 0x62, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[64];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x62, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {  // First table
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x62).\n"));
     }
     QString manufacturer;
-    int length = control_buf_in[0];
+    int length = controlBufferIn[0];
     int end = length > 62 ? 62 : length;
-    for (int i = 2; i < end; i += 2) {  // Process first 30 characters (bytes 2-61 of the table array)
-        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
-            manufacturer.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+    for (int i = 2; i < end; i += 2) {  // Process first 30 characters (bytes 2-61 of the array)
+        if (controlBufferIn[i] != 0 || controlBufferIn[i + 1] != 0) {  // Filter out null characters
+            manufacturer.append(QChar(controlBufferIn[i + 1] << 8 | controlBufferIn[i]));  // UTF-16LE conversion as per the USB 2.0 specification
         }
     }
     if (length > 62) {
-        quint16 midchar = control_buf_in[62];  // Char in the middle (parted between two tables)
-        if (controlTransfer(0xC0, 0x64, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+        quint16 midchar = controlBufferIn[62];  // Char in the middle (parted between two tables)
+        if (controlTransfer(0xC0, 0x64, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {  // Second table
             errcnt += 1;
             errstr.append(QObject::tr("Failed control transfer (0xC0, 0x64).\n"));
         }
-        midchar = static_cast<quint16>(control_buf_in[0] << 8 | midchar);  // Reconstruct the char in the middle
+        midchar = static_cast<quint16>(controlBufferIn[0] << 8 | midchar);  // Reconstruct the char in the middle
         if (midchar != 0x0000) {  // Filter out the reconstructed char if the same is null
             manufacturer.append(QChar(midchar));
         }
         end = length - 63;
-        for (int i = 1; i < end; i += 2) {  // Process remaining characters, up to 31 (bytes 1-62 of the table array)
-            if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Again, filter out null characters
-                manufacturer.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+        for (int i = 1; i < end; i += 2) {  // Process remaining characters, up to 31 (bytes 1-62 of the array)
+            if (controlBufferIn[i] != 0 || controlBufferIn[i + 1] != 0) {  // Again, filter out null characters
+                manufacturer.append(QChar(controlBufferIn[i + 1] << 8 | controlBufferIn[i]));  // UTF-16LE conversion as per the USB 2.0 specification
             }
         }
     }
@@ -300,55 +351,58 @@ QString CP2130::getManufacturer(int &errcnt, QString &errstr) const
 // Gets the maximum power descriptor from the CP2130 OTP ROM
 quint8 CP2130::getMaxPower(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[9];
-    if (controlTransfer(0xC0, 0x60, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[9];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x60, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x60).\n"));
     }
-    return control_buf_in[4];
+    return controlBufferIn[4];
 }
 
 // Gets the minor release version from the CP2130 OTP ROM
 quint8 CP2130::getMinorRelease(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[9];
-    if (controlTransfer(0xC0, 0x60, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[9];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x60, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x60).\n"));
     }
-    return control_buf_in[7];
+    return controlBufferIn[7];
 }
 
 // Gets the product descriptor from the CP2130 OTP ROM
 QString CP2130::getProduct(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[64];
-    if (controlTransfer(0xC0, 0x66, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[64];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x66, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {  // First table
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x66).\n"));
     }
     QString product;
-    int length = control_buf_in[0];
+    int length = controlBufferIn[0];
     int end = length > 62 ? 62 : length;
-    for (int i = 2; i < end; i += 2) {  // Process first 30 characters (bytes 2-61 of the table array)
-        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
-            product.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+    for (int i = 2; i < end; i += 2) {  // Process first 30 characters (bytes 2-61 of the array)
+        if (controlBufferIn[i] != 0 || controlBufferIn[i + 1] != 0) {  // Filter out null characters
+            product.append(QChar(controlBufferIn[i + 1] << 8 | controlBufferIn[i]));  // UTF-16LE conversion as per the USB 2.0 specification
         }
     }
     if (length > 62) {
-        quint16 midchar = control_buf_in[62];  // Char in the middle (parted between two tables)
-        if (controlTransfer(0xC0, 0x68, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+        quint16 midchar = controlBufferIn[62];  // Char in the middle (parted between two tables)
+        if (controlTransfer(0xC0, 0x68, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {  // Second table
             errcnt += 1;
             errstr.append(QObject::tr("Failed control transfer (0xC0, 0x68).\n"));
         }
-        midchar = static_cast<quint16>(control_buf_in[0] << 8 | midchar);  // Reconstruct the char in the middle
+        midchar = static_cast<quint16>(controlBufferIn[0] << 8 | midchar);  // Reconstruct the char in the middle
         if (midchar != 0x0000) {  // Filter out the reconstructed char if the same is null
             product.append(QChar(midchar));
         }
         end = length - 63;
-        for (int i = 1; i < end; i += 2) {  // Process remaining characters, up to 31 (bytes 1-62 of the table array)
-            if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Again, filter out null characters
-                product.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+        for (int i = 1; i < end; i += 2) {  // Process remaining characters, up to 31 (bytes 1-62 of the array)
+            if (controlBufferIn[i] != 0 || controlBufferIn[i + 1] != 0) {  // Again, filter out null characters
+                product.append(QChar(controlBufferIn[i + 1] << 8 | controlBufferIn[i]));  // UTF-16LE conversion as per the USB 2.0 specification
             }
         }
     }
@@ -358,15 +412,16 @@ QString CP2130::getProduct(int &errcnt, QString &errstr) const
 // Gets the serial descriptor from the CP2130 OTP ROM
 QString CP2130::getSerial(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[64];
-    if (controlTransfer(0xC0, 0x6A, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+    unsigned char controlBufferIn[64];
+    quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
+    if (controlTransfer(0xC0, 0x6A, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x6A).\n"));
     }
     QString serial;
-    for (int i = 2; i < control_buf_in[0]; i += 2) {
-        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
-            serial.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+    for (int i = 2; i < controlBufferIn[0]; i += 2) {
+        if (controlBufferIn[i] != 0 || controlBufferIn[i + 1] != 0) {  // Filter out null characters
+            serial.append(QChar(controlBufferIn[i + 1] << 8 | controlBufferIn[i]));  // UTF-16LE conversion as per the USB 2.0 specification
         }
     }
     return serial;
@@ -381,7 +436,7 @@ CP2130::SPIDelays CP2130::getSPIDelays(quint8 channel, int &errcnt, QString &err
         errstr.append(QObject::tr("In getSPIDelays(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
     } else {
         unsigned char controlBufferIn[8];
-        quint16 size = sizeof(controlBufferIn);
+        quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
         if (controlTransfer(0xC0, 0x32, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
             errcnt += 1;
             errstr.append(QObject::tr("Failed control transfer (0xC0, 0x32).\n"));
@@ -407,7 +462,7 @@ CP2130::SPIMode CP2130::getSPIMode(quint8 channel, int &errcnt, QString &errstr)
         errstr.append(QObject::tr("In getSPIMode(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
     } else {
         unsigned char controlBufferIn[11];
-        quint16 size = sizeof(controlBufferIn);
+        quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
         if (controlTransfer(0xC0, 0x30, 0x0000, 0x0000, controlBufferIn, size, errcnt, errstr) != size) {
             errcnt += 1;
             errstr.append(QObject::tr("Failed control transfer (0xC0, 0x30).\n"));
@@ -432,11 +487,12 @@ void CP2130::reset(int &errcnt, QString &errstr) const
 // Enables the chip select of the target channel, disabling any others
 void CP2130::selectCS(quint8 channel, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[2] = {
+    unsigned char controlBufferOut[2] = {
         channel,  // Selected channel
         0x02      // Only the corresponding chip select is enabled, all the others are disabled
     };
-    if (controlTransfer(0x40, 0x25, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x25, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x25).\n"));
     }
@@ -445,11 +501,12 @@ void CP2130::selectCS(quint8 channel, int &errcnt, QString &errstr) const
 // Sets the GPIO.1 pin on the CP2130 to a given value
 void CP2130::setGPIO1(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         0x00, static_cast<quint8>(value << 4),  // Set the value of GPIO.1 to the intended value
-        0x00, 0x10                               // Set the mask so that only GPIO.1 is changed
+        0x00, 0x10                              // Set the mask so that only GPIO.1 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -458,11 +515,12 @@ void CP2130::setGPIO1(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.2 pin on the CP2130 to a given value
 void CP2130::setGPIO2(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         0x00, static_cast<quint8>(value << 5),  // Set the value of GPIO.2 to the intended value
-        0x00, 0x20                               // Set the mask so that only GPIO.2 is changed
+        0x00, 0x20                              // Set the mask so that only GPIO.2 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -471,11 +529,12 @@ void CP2130::setGPIO2(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.3 pin on the CP2130 to a given value
 void CP2130::setGPIO3(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         0x00, static_cast<quint8>(value << 6),  // Set the value of GPIO.3 to the intended value
-        0x00, 0x40                               // Set the mask so that only GPIO.3 is changed
+        0x00, 0x40                              // Set the mask so that only GPIO.3 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -484,11 +543,12 @@ void CP2130::setGPIO3(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.4 pin on the CP2130 to a given value
 void CP2130::setGPIO4(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         0x00, static_cast<quint8>(value << 7),  // Set the value of GPIO.4 to the intended value
-        0x00, 0x80                               // Set the mask so that only GPIO.4 is changed
+        0x00, 0x80                              // Set the mask so that only GPIO.4 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -497,11 +557,12 @@ void CP2130::setGPIO4(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.5 pin on the CP2130 to a given value
 void CP2130::setGPIO5(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         static_cast<quint8>(value), 0x00,  // Set the value of GPIO.5 to the intended value
-        0x01, 0x00                          // Set the mask so that only GPIO.5 is changed
+        0x01, 0x00                         // Set the mask so that only GPIO.5 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -510,11 +571,12 @@ void CP2130::setGPIO5(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.6 pin on the CP2130 to a given value
 void CP2130::setGPIO6(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         static_cast<quint8>(value << 2), 0x00,  // Set the value of GPIO.6 to the intended value
-        0x04, 0x00                               // Set the mask so that only GPIO.6 is changed
+        0x04, 0x00                              // Set the mask so that only GPIO.6 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -523,11 +585,12 @@ void CP2130::setGPIO6(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.7 pin on the CP2130 to a given value
 void CP2130::setGPIO7(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         static_cast<quint8>(value << 3), 0x00,  // Set the value of GPIO.7 to the intended value
-        0x08, 0x00                               // Set the mask so that only GPIO.7 is changed
+        0x08, 0x00                              // Set the mask so that only GPIO.7 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -536,11 +599,12 @@ void CP2130::setGPIO7(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.8 pin on the CP2130 to a given value
 void CP2130::setGPIO8(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         static_cast<quint8>(value << 4), 0x00,  // Set the value of GPIO.8 to the intended value
-        0x10, 0x00                               // Set the mask so that only GPIO.8 is changed
+        0x10, 0x00                              // Set the mask so that only GPIO.8 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -549,11 +613,12 @@ void CP2130::setGPIO8(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.9 pin on the CP2130 to a given value
 void CP2130::setGPIO9(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         static_cast<quint8>(value << 5), 0x00,  // Set the value of GPIO.9 to the intended value
-        0x20, 0x00                               // Set the mask so that only GPIO.9 is changed
+        0x20, 0x00                              // Set the mask so that only GPIO.9 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
@@ -562,11 +627,12 @@ void CP2130::setGPIO9(bool value, int &errcnt, QString &errstr) const
 // Sets the GPIO.10 pin on the CP2130 to a given value
 void CP2130::setGPIO10(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
+    unsigned char controlBufferOut[4] = {
         static_cast<quint8>(value << 6), 0x00,  // Set the value of GPIO.10 to the intended value
-        0x40, 0x00                               // Set the mask so that only GPIO.10 is changed
+        0x40, 0x00                              // Set the mask so that only GPIO.10 is changed
     };
-    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), errcnt, errstr) != sizeof(control_buf_out)) {
+    quint16 size = static_cast<quint16>(sizeof(controlBufferOut));
+    if (controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, size, errcnt, errstr) != size) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
     }
