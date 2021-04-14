@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.2.2 for Debian Linux
+/* CP2130 class for Qt - Version 0.2.3 for Debian Linux
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -270,10 +270,28 @@ QString CP2130::getManufacturer(int &errcnt, QString &errstr) const
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x62).\n"));
     }
     QString manufacturer;
-    int end = control_buf_in[0] > 62 ? 62 : control_buf_in[0];
-    for (int i = 2; i < end; i += 2) {  // Descriptor length is limited to 30 characters, or 60 bytes
+    int length = control_buf_in[0];
+    int end = length > 62 ? 62 : length;
+    for (int i = 2; i < end; i += 2) {  // Process first 30 characters (bytes 2-61 of the table array)
         if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
             manufacturer.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+        }
+    }
+    if (length > 62) {
+        quint16 midchar = control_buf_in[62];  // Char in the middle (parted between two tables)
+        if (controlTransfer(0xC0, 0x64, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+            errcnt += 1;
+            errstr.append(QObject::tr("Failed control transfer (0xC0, 0x64).\n"));
+        }
+        midchar = static_cast<quint16>(control_buf_in[0] << 8 | midchar);  // Reconstruct the char in the middle
+        if (midchar != 0x0000) {  // Filter out the reconstructed char if the same is null
+            manufacturer.append(QChar(midchar));
+        }
+        end = length - 63;
+        for (int i = 1; i < end; i += 2) {  // Process remaining characters, up to 31 (bytes 1-62 of the table array)
+            if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Again, filter out null characters
+                manufacturer.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+            }
         }
     }
     return manufacturer;
@@ -310,10 +328,28 @@ QString CP2130::getProduct(int &errcnt, QString &errstr) const
         errstr.append(QObject::tr("Failed control transfer (0xC0, 0x66).\n"));
     }
     QString product;
-    int end = control_buf_in[0] > 62 ? 62 : control_buf_in[0];
-    for (int i = 2; i < end; i += 2) {  // Descriptor length is limited to 30 characters, or 60 bytes
+    int length = control_buf_in[0];
+    int end = length > 62 ? 62 : length;
+    for (int i = 2; i < end; i += 2) {  // Process first 30 characters (bytes 2-61 of the table array)
         if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
             product.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+        }
+    }
+    if (length > 62) {
+        quint16 midchar = control_buf_in[62];  // Char in the middle (parted between two tables)
+        if (controlTransfer(0xC0, 0x68, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), errcnt, errstr) != sizeof(control_buf_in)) {
+            errcnt += 1;
+            errstr.append(QObject::tr("Failed control transfer (0xC0, 0x68).\n"));
+        }
+        midchar = static_cast<quint16>(control_buf_in[0] << 8 | midchar);  // Reconstruct the char in the middle
+        if (midchar != 0x0000) {  // Filter out the reconstructed char if the same is null
+            product.append(QChar(midchar));
+        }
+        end = length - 63;
+        for (int i = 1; i < end; i += 2) {  // Process remaining characters, up to 31 (bytes 1-62 of the table array)
+            if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Again, filter out null characters
+                product.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
+            }
         }
     }
     return product;

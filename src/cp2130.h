@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.2.2 for Debian Linux
+/* CP2130 class for Qt - Version 0.2.3 for Debian Linux
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
