@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.3.0 for Debian Linux
+/* CP2130 class for Qt - Version 0.3.1 for Debian Linux
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -434,6 +434,7 @@ CP2130::SPIDelays CP2130::getSPIDelays(quint8 channel, int &errcnt, QString &err
     if (channel > 10) {
         errcnt += 1;
         errstr.append(QObject::tr("In getSPIDelays(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        delays = {false, false, false, false, 0x0000, 0x0000, 0x0000};
     } else {
         unsigned char controlBufferIn[8];
         quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
@@ -460,6 +461,7 @@ CP2130::SPIMode CP2130::getSPIMode(quint8 channel, int &errcnt, QString &errstr)
     if (channel > 10) {
         errcnt += 1;
         errstr.append(QObject::tr("In getSPIMode(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        mode = {false, 0x00, false, false};
     } else {
         unsigned char controlBufferIn[11];
         quint16 size = static_cast<quint16>(sizeof(controlBufferIn));
