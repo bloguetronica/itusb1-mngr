@@ -49,7 +49,7 @@ void InformationDialog::setManufacturerLabelText(const QString &manufacturerstr)
 }
 
 // Sets the labelMaxPower text
-void InformationDialog::setMaxPowerLabelText(uint8_t maxpower)
+void InformationDialog::setMaxPowerLabelText(quint8 maxpower)
 {
     QString maxpowerstr = QString::number(2 * maxpower);  // Maximum current value (reported as being the maximum power consumption by the USB-IF)
     maxpowerstr.append(QString(" [0x%1]").arg(maxpower, 2, 16, QChar('0')));  // Append the bMaxPower descriptor value between brackets
@@ -71,7 +71,7 @@ void InformationDialog::setProductLabelText(const QString &productstr)
 }
 
 // Sets the labelRevision text
-void InformationDialog::setRevisionLabelText(uint8_t majrelease, uint8_t minrelease)
+void InformationDialog::setRevisionLabelText(quint8 majrelease, quint8 minrelease)
 {
     QString revision;
     if (majrelease > 1 && majrelease <= 27) {

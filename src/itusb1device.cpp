@@ -24,38 +24,28 @@
 #include "itusb1device.h"
 
 // Definitions
-const uint16_t VID = 0x10C4;  // USB vendor ID
-const uint16_t PID = 0x8C96;  // USB product ID
+const quint16 VID = 0x10C4;  // USB vendor ID
+const quint16 PID = 0x8C96;  // USB product ID
 
 // Gets the raw value, corresponding to the measured current, from the LTC2312 ADC (private helper function since version 1.1)
 quint16 ITUSB1Device::getRawCurrent(int &errcnt, QString &errstr) const
 {
-    unsigned char read_command_buf[8] = {
+    unsigned char readCommandBuffer[8] = {
         0x00, 0x00,             // Reserved
         0x00,                   // Read command
         0x00,                   // Reserved
         0x02, 0x00, 0x00, 0x00  // Two bytes to read
     };
-    unsigned char read_input_buf[2];
-    int bytes_read, bytes_written;
-    if (cp2130_.bulkTransfer(0x01, read_command_buf, sizeof(read_command_buf), &bytes_written, errcnt, errstr) != 0) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed bulk OUT transfer to endpoint 1 (address 0x01).\n"));
-    } else if (cp2130_.bulkTransfer(0x82, read_input_buf, sizeof(read_input_buf), &bytes_read, errcnt, errstr) != 0) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed bulk IN transfer from endpoint 2 (address 0x82).\n"));
-    }
-    return static_cast<quint16>(read_input_buf[0] << 4 | read_input_buf[1] >> 4);
+    unsigned char readInputBuffer[2];
+    int bytesRead, bytesWritten;
+    cp2130_.bulkTransfer(0x01, readCommandBuffer, static_cast<int>(sizeof(readCommandBuffer)), &bytesWritten, errcnt, errstr);
+    cp2130_.bulkTransfer(0x82, readInputBuffer, static_cast<int>(sizeof(readInputBuffer)), &bytesRead, errcnt, errstr);
+    return static_cast<quint16>(readInputBuffer[0] << 4 | readInputBuffer[1] >> 4);
 }
 
 ITUSB1Device::ITUSB1Device() :
     cp2130_()
 {
-}
-
-ITUSB1Device::~ITUSB1Device()
-{
-    cp2130_.close();  // The destructor is used to close the device, and this is essential so the device can be freed when the parent object is destroyed
 }
 
 // Attaches the DUT (device under test) to the HUT (host under test)
@@ -99,28 +89,10 @@ float ITUSB1Device::getCurrent(int &errcnt, QString &errstr) const
     return curr_code_sum / 20.0;  // Return the average current out of five readings for each point (current = curr_code / 4.0 for a single reading)
 }
 
-// Gets the major release version from the device
-quint8 ITUSB1Device::getMajorRelease(int &errcnt, QString &errstr) const
-{
-    return cp2130_.getMajorRelease(errcnt, errstr);
-}
-
 // Gets the manufacturer descriptor from the device
-QString ITUSB1Device::getManufacturer(int &errcnt, QString &errstr) const
+QString ITUSB1Device::getManufacturerDesc(int &errcnt, QString &errstr) const
 {
-    return cp2130_.getManufacturer(errcnt, errstr);
-}
-
-// Gets the maximum power descriptor from the device
-quint8 ITUSB1Device::getMaxPower(int &errcnt, QString &errstr) const
-{
-    return cp2130_.getMaxPower(errcnt, errstr);
-}
-
-// Gets the minor release version from the device
-quint8 ITUSB1Device::getMinorRelease(int &errcnt, QString &errstr) const
-{
-    return cp2130_.getMinorRelease(errcnt, errstr);
+    return cp2130_.getManufacturerDesc(errcnt, errstr);
 }
 
 // Gets OC flag
@@ -130,15 +102,21 @@ bool ITUSB1Device::getOverCurrentStatus(int &errcnt, QString &errstr) const
 }
 
 // Gets the product descriptor from the device
-QString ITUSB1Device::getProduct(int &errcnt, QString &errstr) const
+QString ITUSB1Device::getProductDesc(int &errcnt, QString &errstr) const
 {
-    return cp2130_.getProduct(errcnt, errstr);
+    return cp2130_.getProductDesc(errcnt, errstr);
 }
 
 // Gets the serial descriptor from the device
-QString ITUSB1Device::getSerial(int &errcnt, QString &errstr) const
+QString ITUSB1Device::getSerialDesc(int &errcnt, QString &errstr) const
 {
-    return cp2130_.getSerial(errcnt, errstr);
+    return cp2130_.getSerialDesc(errcnt, errstr);
+}
+
+// Gets the USB configuration of the device
+CP2130::USBConfig ITUSB1Device::getUSBConfig(int &errcnt, QString &errstr) const
+{
+    return cp2130_.getUSBConfig(errcnt, errstr);
 }
 
 // Gets the status of the data lines

@@ -112,11 +112,12 @@ void DeviceWindow::on_actionInformation_triggered()
     int errcnt = 0;
     QString errstr;
     InformationDialog info;
-    info.setManufacturerLabelText(device_.getManufacturer(errcnt, errstr));
-    info.setProductLabelText(device_.getProduct(errcnt, errstr));
-    info.setSerialLabelText(device_.getSerial(errcnt, errstr));  // It is important to read the serial number from the OTP ROM, instead of just passing the value of serialstr_
-    info.setRevisionLabelText(device_.getMajorRelease(errcnt, errstr), device_.getMinorRelease(errcnt, errstr));
-    info.setMaxPowerLabelText(device_.getMaxPower(errcnt, errstr));
+    info.setManufacturerLabelText(device_.getManufacturerDesc(errcnt, errstr));
+    info.setProductLabelText(device_.getProductDesc(errcnt, errstr));
+    info.setSerialLabelText(device_.getSerialDesc(errcnt, errstr));  // It is important to read the serial number from the OTP ROM, instead of just passing the value of serialstr_
+    CP2130::USBConfig config = device_.getUSBConfig(errcnt, errstr);
+    info.setRevisionLabelText(config.majrel, config.minrel);
+    info.setMaxPowerLabelText(config.maxpow);
     if (opCheck(tr("device-information-retrieval-op"), errcnt, errstr)) {  // If error check passes (the string "device-information-retrieval-op" should be translated to "Device information retrieval")
         info.exec();
     }

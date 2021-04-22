@@ -37,9 +37,9 @@ public:
     explicit InformationDialog(QWidget *parent = 0);
     ~InformationDialog();
     void setManufacturerLabelText(const QString &manufacturerstr);
-    void setMaxPowerLabelText(uint8_t maxpower);
+    void setMaxPowerLabelText(quint8 maxpower);
     void setProductLabelText(const QString &productstr);
-    void setRevisionLabelText(uint8_t majrelease, uint8_t minrelease);
+    void setRevisionLabelText(quint8 majrelease, quint8 minrelease);
     void setSerialLabelText(const QString &serialstr);
 
 private:

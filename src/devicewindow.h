@@ -28,7 +28,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include "datalog.h"
-#include "itusb1device.h"
+#include "itusb1device.h"  // Also includes "cp2130.h"
 #include "metrics.h"
 
 namespace Ui {

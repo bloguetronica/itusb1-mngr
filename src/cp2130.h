@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.3.1 for Debian Linux
+/* CP2130 class for Qt - Version 0.4.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -33,23 +33,81 @@ private:
     bool kernelAttached_;
 
 public:
-    //Class definitions
-    static const quint16 VID = 0x10C4;     // Default USB vendor ID
-    static const quint16 PID = 0x87A0;     // Default USB product ID
-    static const bool CSMODEOD = false;    // Boolean corresponding to chip select open drain mode, applicable to SPIMode/configureSPIMode()
-    static const bool CSMODEPP = true;     // Boolean corresponding to chip select push-pull mode, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ12M = 0x00;    // Value corresponding to a clock frequency of 12MHz, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ6M = 0x01;     // Value corresponding to a clock frequency of 6MHz, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ3M = 0x02;     // Value corresponding to a clock frequency of 3MHz, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ1500K = 0x03;  // Value corresponding to a clock frequency of 1.5MHz, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ750K = 0x04;   // Value corresponding to a clock frequency of 750KHz, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ375K = 0x05;   // Value corresponding to a clock frequency of 375KHz, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ1875= 0x06;    // Value corresponding to a clock frequency of 187.5KHz, applicable to SPIMode/configureSPIMode()
-    static const quint8 CFRQ938 = 0x07;    // Value corresponding to a clock frequency of 93.8KHz, applicable to SPIMode/configureSPIMode()
-    static const bool CPOL0 = false;       // Boolean corresponding to CPOL = 0, applicable to SPIMode/configureSPIMode()
-    static const bool CPOL1 = true;        // Boolean corresponding to CPOL = 1, applicable to SPIMode/configureSPIMode()
-    static const bool CPHA0 = false;       // Boolean corresponding to CPHA = 0, applicable to SPIMode/configureSPIMode()
-    static const bool CPHA1 = true;        // Boolean corresponding to CPHA = 1, applicable to SPIMode/configureSPIMode()
+    // Class definitions
+    static const quint16 VID = 0x10C4;  // Default USB vendor ID
+    static const quint16 PID = 0x87A0;  // Default USB product ID
+
+    // The following values are applicable to SPIMode/configureSPIMode()/getSPIMode()
+    static const bool CSMODEOD = false;    // Boolean corresponding to chip select open-drain mode
+    static const bool CSMODEPP = true;     // Boolean corresponding to chip select push-pull mode
+    static const quint8 CFRQ12M = 0x00;    // Value corresponding to a clock frequency of 12MHz
+    static const quint8 CFRQ6M = 0x01;     // Value corresponding to a clock frequency of 6MHz
+    static const quint8 CFRQ3M = 0x02;     // Value corresponding to a clock frequency of 3MHz
+    static const quint8 CFRQ1500K = 0x03;  // Value corresponding to a clock frequency of 1.5MHz
+    static const quint8 CFRQ750K = 0x04;   // Value corresponding to a clock frequency of 750KHz
+    static const quint8 CFRQ375K = 0x05;   // Value corresponding to a clock frequency of 375KHz
+    static const quint8 CFRQ1875= 0x06;    // Value corresponding to a clock frequency of 187.5KHz
+    static const quint8 CFRQ938 = 0x07;    // Value corresponding to a clock frequency of 93.8KHz
+    static const bool CPOL0 = false;       // Boolean corresponding to CPOL = 0
+    static const bool CPOL1 = true;        // Boolean corresponding to CPOL = 1
+    static const bool CPHA0 = false;       // Boolean corresponding to CPHA = 0
+    static const bool CPHA1 = true;        // Boolean corresponding to CPHA = 1
+
+    // The following masks are applicable to the value returned by getLockWord()
+    static const quint16 LWVID = 0x0001;      // Mask for the vendor ID lock bit
+    static const quint16 LWPID = 0x0002;      // Mask for the product ID lock bit
+    static const quint16 LWMAXPOW = 0x0004;   // Mask for the max power lock bit
+    static const quint16 LWPOWMODE = 0x0008;  // Mask for the power mode lock bit
+    static const quint16 LWREL = 0x0010;      // Mask for the release version lock bit
+    static const quint16 LWMANUF = 0x0060;    // Mask for the manufacturer descriptor lock bits
+    static const quint16 LWTRFPRIO = 0x0080;  // Mask for the transfer priority lock bit
+    static const quint16 LWUSBCFG = 0x009F;   // Mask for the USB config lock bits
+    static const quint16 LWPROD = 0x0300;     // Mask for the product descriptor lock bits
+    static const quint16 LWSER = 0x0400;      // Mask for the serial descriptor lock bit
+    static const quint16 LWPINCFG = 0x0800;   // Mask for the pin config lock bit
+    static const quint16 LWALL = 0x0FFF;      // Mask for all but the reserved lock bits
+
+    // The following values are applicable to PinConfig/getPinConfig()/writePinConfig()
+    static const quint8 PCIN = 0x00;         // GPIO as input
+    static const quint8 PCOUTOD = 0x01;      // GPIO as open-drain output
+    static const quint8 PCOUTPP = 0x02;      // GPIO as push-pull output
+    static const quint8 PCCS = 0x03;         // GPIO as chip select
+    static const quint8 PCNRTR = 0x04;       // GPIO as !RTR input, only applicable to GPIO.3
+    static const quint8 PCRTR = 0x05;        // GPIO as RTR input, only applicable to GPIO.3
+    static const quint8 PCEVTCNTRRE = 0x04;  // GPIO as EVTCNTR rising edge input, only applicable to GPIO.4
+    static const quint8 PCEVTCNTRFE = 0x05;  // GPIO as EVTCNTR falling edge input, only applicable to GPIO.4
+    static const quint8 PCEVTCNTRNP = 0x06;  // GPIO as EVTCNTR negative pulse input, only applicable to GPIO.4
+    static const quint8 PCEVTCNTRPP = 0x07;  // GPIO as EVTCNTR positive pulse input, only applicable to GPIO.4
+    static const quint8 PCCLKOUT = 0x04;     // GPIO as CLKOUT push-pull output, only applicable to GPIO.5
+    static const quint8 PCSPIACT = 0x04;     // GPIO as SPIACT push-pull output, only applicable to GPIO.8
+    static const quint8 PCSSPND = 0x04;      // GPIO as SUSPEND push-pull output, only applicable to GPIO.9
+    static const quint8 PCNSSPND = 0x04;     // GPIO as !SUSPEND push-pull output, only applicable to GPIO.10
+
+    // The following values are applicable to USBConfig/getUSBConfig()/writeUSBConfig()
+    static const quint8 PMBUSREGEN = 0x00;   // Value corresponding to USB bus-powered mode with voltage regulator enabled
+    static const quint8 PMBUSREGDIS = 0x01;  // Value corresponding to USB bus-powered mode with voltage regulator disabled
+    static const quint8 PMSELFREGEN = 0x02;  // Value corresponding to USB self-powered mode with voltage regulator enabled
+    static const quint8 PRIOREAD = 0x00;     // Value corresponding to data transfer with high priority read
+    static const quint8 PRIOWRITE = 0x01;    // Value corresponding to data transfer with high priority write
+
+    struct PinConfig {
+        quint8 gpio0;       // GPIO.0 pin config
+        quint8 gpio1;       // GPIO.1 pin config
+        quint8 gpio2;       // GPIO.2 pin config
+        quint8 gpio3;       // GPIO.3 pin config
+        quint8 gpio4;       // GPIO.4 pin config
+        quint8 gpio5;       // GPIO.5 pin config
+        quint8 gpio6;       // GPIO.6 pin config
+        quint8 gpio7;       // GPIO.7 pin config
+        quint8 gpio8;       // GPIO.8 pin config
+        quint8 gpio9;       // GPIO.9 pin config
+        quint8 gpio10;      // GPIO.10 pin config
+        quint16 sspndlvl;   // Suspend pin level bitmap (big-endian - see Silicon Labs AN792 for details)
+        quint16 sspndmode;  // Suspend pin mode bitmap (big-endian - see Silicon Labs AN792 for details)
+        quint16 wkupmask;   // Wakeup pin mask bitmap (big-endian - see Silicon Labs AN792 for details)
+        quint16 wkupmatch;  // Wakeup pin match bitmap (big-endian - see Silicon Labs AN792 for details)
+        quint8 divider;     // GPIO.5/!CS5/CLKOUT OTP ROM clock divider value (see Silicon Labs AN792 for details)
+    };
 
     struct SPIDelays {
         bool cstglen;       // CS toggle enable
@@ -68,13 +126,23 @@ public:
         bool cpha;    // Clock phase
     };
 
+    struct USBConfig {
+        quint16 vid;     // Vendor ID (little-endian)
+        quint16 pid;     // Product ID (little-endian)
+        quint8 majrel;   // Major release version
+        quint8 minrel;   // Minor release version
+        quint8 maxpow;   // Maximum consumption current (raw value in 2mA units)
+        quint8 powmode;  // Power mode
+        quint8 trfprio;  // Transfer priority
+    };
+
     CP2130();
     ~CP2130();
 
-    int bulkTransfer(quint8 endpoint, unsigned char *data, int length, int *transferred, int &errcnt, QString &errstr) const;
+    void bulkTransfer(quint8 endpoint, unsigned char *data, int length, int *transferred, int &errcnt, QString &errstr) const;
     void configureSPIDelays(quint8 channel, const SPIDelays &delays, int &errcnt, QString &errstr) const;
     void configureSPIMode(quint8 channel, const SPIMode &mode, int &errcnt, QString &errstr) const;
-    int controlTransfer(quint8 bmRequestType, quint8 bRequest, quint16 wValue, quint16 wIndex, unsigned char *data, quint16 wLength, int &errcnt, QString &errstr) const;
+    void controlTransfer(quint8 bmRequestType, quint8 bRequest, quint16 wValue, quint16 wIndex, unsigned char *data, quint16 wLength, int &errcnt, QString &errstr) const;
     void disableCS(quint8 channel, int &errcnt, QString &errstr) const;
     void disableSPIDelays(quint8 channel, int &errcnt, QString &errstr) const;
     void enableCS(quint8 channel, int &errcnt, QString &errstr) const;
@@ -89,15 +157,18 @@ public:
     bool getGPIO8(int &errcnt, QString &errstr) const;
     bool getGPIO9(int &errcnt, QString &errstr) const;
     bool getGPIO10(int &errcnt, QString &errstr) const;
-    quint8 getMajorRelease(int &errcnt, QString &errstr) const;
-    QString getManufacturer(int &errcnt, QString &errstr) const;
-    quint8 getMaxPower(int &errcnt, QString &errstr) const;
-    quint8 getMinorRelease(int &errcnt, QString &errstr) const;
-    QString getProduct(int &errcnt, QString &errstr) const;
-    QString getSerial(int &errcnt, QString &errstr) const;
+    quint16 getLockWord(int &errcnt, QString &errstr) const;
+    QString getManufacturerDesc(int &errcnt, QString &errstr) const;
+    PinConfig getPinConfig(int &errcnt, QString &errstr) const;
+    QString getProductDesc(int &errcnt, QString &errstr) const;
+    QString getSerialDesc(int &errcnt, QString &errstr) const;
     SPIDelays getSPIDelays(quint8 channel, int &errcnt, QString &errstr) const;
     SPIMode getSPIMode(quint8 channel, int &errcnt, QString &errstr) const;
+    USBConfig getUSBConfig(int &errcnt, QString &errstr) const;
     bool isOpen() const;
+    bool isOTPBlank(int &errcnt, QString &errstr) const;
+    bool isOTPLocked(int &errcnt, QString &errstr) const;
+    void lockOTP(int &errcnt, QString &errstr) const;
     void reset(int &errcnt, QString &errstr) const;
     void selectCS(quint8 channel, int &errcnt, QString &errstr) const;
     void setGPIO1(bool value, int &errcnt, QString &errstr) const;
@@ -110,6 +181,12 @@ public:
     void setGPIO8(bool value, int &errcnt, QString &errstr) const;
     void setGPIO9(bool value, int &errcnt, QString &errstr) const;
     void setGPIO10(bool value, int &errcnt, QString &errstr) const;
+    void writeLockWord(quint16 word, int &errcnt, QString &errstr) const;
+    void writeManufacturerDesc(QString manufacturer, int &errcnt, QString &errstr) const;
+    void writePinConfig(PinConfig config, int &errcnt, QString &errstr) const;
+    void writeProductDesc(QString product, int &errcnt, QString &errstr) const;
+    void writeSerialDesc(QString serial, int &errcnt, QString &errstr) const;
+    void writeUSBConfig(USBConfig config, quint8 mask, int &errcnt, QString &errstr) const;
 
     void close();
     int open(quint16 vid, quint16 pid, const QString &serial);
