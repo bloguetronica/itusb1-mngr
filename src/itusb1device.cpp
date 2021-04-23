@@ -125,7 +125,7 @@ bool ITUSB1Device::getUSBDataStatus(int &errcnt, QString &errstr) const
     return !cp2130_.getGPIO2(errcnt, errstr);  // Return the current state of the negated !UDEN signal
 }
 
-// Gets the status of VBUS status
+// Gets the status of VBUS
 bool ITUSB1Device::getUSBPowerStatus(int &errcnt, QString &errstr) const
 {
     return !cp2130_.getGPIO1(errcnt, errstr);  // Return the current state of the negated !UPEN signal
