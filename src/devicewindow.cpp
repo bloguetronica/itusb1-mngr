@@ -265,10 +265,10 @@ void DeviceWindow::update()
     // No verification is done here since version 2.0
     int errcnt = 0;
     QString errstr;
+    float current = device_.getCurrent(errcnt, errstr);
     bool up = device_.getUSBPowerStatus(errcnt, errstr);
     bool ud = device_.getUSBDataStatus(errcnt, errstr);
     bool oc = device_.getOverCurrentStatus(errcnt, errstr);
-    float current = device_.getCurrent(errcnt, errstr);
     if (opCheck(tr("update-op"), errcnt, errstr)) {  // Update values if no errors occur (implemented since version 2.0, and refactored in version 3.0)
         if (ui->actionLogData->isChecked()) {
             logDataPoint(current, up, ud, oc);
