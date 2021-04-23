@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.4.0
+/* CP2130 class for Qt - Version 0.4.1
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -37,6 +37,20 @@ public:
     static const quint16 VID = 0x10C4;  // Default USB vendor ID
     static const quint16 PID = 0x87A0;  // Default USB product ID
 
+    // The following masks are applicable to the value returned by getLockWord()
+    static const quint16 LWVID = 0x0001;      // Mask for the vendor ID lock bit
+    static const quint16 LWPID = 0x0002;      // Mask for the product ID lock bit
+    static const quint16 LWMAXPOW = 0x0004;   // Mask for the max power lock bit
+    static const quint16 LWPOWMODE = 0x0008;  // Mask for the power mode lock bit
+    static const quint16 LWREL = 0x0010;      // Mask for the release version lock bit
+    static const quint16 LWMANUF = 0x0060;    // Mask for the manufacturer descriptor lock bits
+    static const quint16 LWTRFPRIO = 0x0080;  // Mask for the transfer priority lock bit
+    static const quint16 LWUSBCFG = 0x009F;   // Mask for the USB config lock bits
+    static const quint16 LWPROD = 0x0300;     // Mask for the product descriptor lock bits
+    static const quint16 LWSER = 0x0400;      // Mask for the serial descriptor lock bit
+    static const quint16 LWPINCFG = 0x0800;   // Mask for the pin config lock bit
+    static const quint16 LWALL = 0x0FFF;      // Mask for all but the reserved lock bits
+
     // The following values are applicable to SPIMode/configureSPIMode()/getSPIMode()
     static const bool CSMODEOD = false;    // Boolean corresponding to chip select open-drain mode
     static const bool CSMODEPP = true;     // Boolean corresponding to chip select push-pull mode
@@ -53,20 +67,6 @@ public:
     static const bool CPHA0 = false;       // Boolean corresponding to CPHA = 0
     static const bool CPHA1 = true;        // Boolean corresponding to CPHA = 1
 
-    // The following masks are applicable to the value returned by getLockWord()
-    static const quint16 LWVID = 0x0001;      // Mask for the vendor ID lock bit
-    static const quint16 LWPID = 0x0002;      // Mask for the product ID lock bit
-    static const quint16 LWMAXPOW = 0x0004;   // Mask for the max power lock bit
-    static const quint16 LWPOWMODE = 0x0008;  // Mask for the power mode lock bit
-    static const quint16 LWREL = 0x0010;      // Mask for the release version lock bit
-    static const quint16 LWMANUF = 0x0060;    // Mask for the manufacturer descriptor lock bits
-    static const quint16 LWTRFPRIO = 0x0080;  // Mask for the transfer priority lock bit
-    static const quint16 LWUSBCFG = 0x009F;   // Mask for the USB config lock bits
-    static const quint16 LWPROD = 0x0300;     // Mask for the product descriptor lock bits
-    static const quint16 LWSER = 0x0400;      // Mask for the serial descriptor lock bit
-    static const quint16 LWPINCFG = 0x0800;   // Mask for the pin config lock bit
-    static const quint16 LWALL = 0x0FFF;      // Mask for all but the reserved lock bits
-
     // The following values are applicable to PinConfig/getPinConfig()/writePinConfig()
     static const quint8 PCIN = 0x00;         // GPIO as input
     static const quint8 PCOUTOD = 0x01;      // GPIO as open-drain output
@@ -82,6 +82,22 @@ public:
     static const quint8 PCSPIACT = 0x04;     // GPIO as SPIACT push-pull output, only applicable to GPIO.8
     static const quint8 PCSSPND = 0x04;      // GPIO as SUSPEND push-pull output, only applicable to GPIO.9
     static const quint8 PCNSSPND = 0x04;     // GPIO as !SUSPEND push-pull output, only applicable to GPIO.10
+    static const quint16 BMSCK = 0x0001;     // SCK pin bitmap value
+    static const quint16 BMMISO = 0x0002;    // MISO pin bitmap value
+    static const quint16 BMMOSI = 0x0004;    // MOSI pin bitmap value
+    static const quint16 BMGPIO0 = 0x0008;   // GPIO.0 pin bitmap value
+    static const quint16 BMGPIO1 = 0x0010;   // GPIO.1 pin bitmap value
+    static const quint16 BMGPIO2 = 0x0020;   // GPIO.2 pin bitmap value
+    static const quint16 BMGPIO3 = 0x0040;   // GPIO.3 pin bitmap value
+    static const quint16 BMGPIO4 = 0x0080;   // GPIO.4 pin bitmap value
+    static const quint16 BMGPIO5 = 0x0100;   // GPIO.5 pin bitmap value
+    static const quint16 BMVPP = 0x0200;     // VPP pin bitmap value
+    static const quint16 BMGPIO6 = 0x0400;   // GPIO.6 pin bitmap value
+    static const quint16 BMGPIO7 = 0x0800;   // GPIO.7 pin bitmap value
+    static const quint16 BMGPIO8 = 0x1000;   // GPIO.8 pin bitmap value
+    static const quint16 BMGPIO9 = 0x2000;   // GPIO.9 pin bitmap value
+    static const quint16 BMGPIO10 = 0x4000;  // GPIO.10 pin bitmap value
+    static const quint16 BMENABLE = 0x8000;  // Suspend mode and level enable bitmap value, only applicable to PinConfig.sspndmode (suspend pin mode bitmap)
 
     // The following values are applicable to USBConfig/getUSBConfig()/writeUSBConfig()
     static const quint8 PMBUSREGEN = 0x00;   // Value corresponding to USB bus-powered mode with voltage regulator enabled

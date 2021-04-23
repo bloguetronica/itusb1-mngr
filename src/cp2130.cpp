@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.4.0
+/* CP2130 class for Qt - Version 0.4.1
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -675,7 +675,7 @@ void CP2130::writeUSBConfig(USBConfig config, quint8 mask, int &errcnt, QString 
 {
     unsigned char controlBufferOut[10] = {
         static_cast<quint8>(config.vid), static_cast<quint8>(config.vid >> 8),  // VID
-        static_cast<quint8>(config.vid), static_cast<quint8>(config.vid >> 8),  // PID
+        static_cast<quint8>(config.pid), static_cast<quint8>(config.pid >> 8),  // PID
         config.maxpow,                                                          // Maximum consumption current
         config.powmode,                                                         // Power mode
         config.majrel, config.minrel,                                           // Major and minor release versions
