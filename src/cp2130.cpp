@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.4.2
+/* CP2130 class for Qt - Version 0.5.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -28,6 +28,66 @@ extern "C" {
 // Definitions
 const quint16 MEM_KEY = 0xA5F1;
 const unsigned int TR_TIMEOUT = 100;  // Transfer timeout in milliseconds
+
+// "Equal to" operator for PinConfig
+bool CP2130::PinConfig::operator ==(const CP2130::PinConfig &other) const
+{
+    return (gpio0 == other.gpio0 && gpio1 == other.gpio1 && gpio2 == other.gpio2 && gpio3 == other.gpio3 && gpio4 == other.gpio4 && gpio5 == other.gpio5 && gpio6 == other.gpio6 && gpio7 == other.gpio7 && gpio8 == other.gpio8 && gpio9 == other.gpio9 && gpio10 == other.gpio10 && sspndlvl == other.sspndlvl && sspndmode == other.sspndmode && wkupmask == other.wkupmask && wkupmatch == other.wkupmatch);
+}
+
+// "Not equal to" operator for PinConfig
+bool CP2130::PinConfig::operator !=(const CP2130::PinConfig &other) const
+{
+    return !(operator ==(other));
+}
+
+// "Equal to" operator for SiliconVersion
+bool CP2130::SiliconVersion::operator ==(const CP2130::SiliconVersion &other) const
+{
+    return (maj == other.maj && min == other.min);
+}
+
+// "Not equal to" operator for SiliconVersion
+bool CP2130::SiliconVersion::operator !=(const CP2130::SiliconVersion &other) const
+{
+    return !(operator ==(other));
+}
+
+// "Equal to" operator for SPIDelays
+bool CP2130::SPIDelays::operator ==(const CP2130::SPIDelays &other) const
+{
+    return (cstglen == other.cstglen && prdasten == other.prdasten && pstasten == other.pstasten && itbyten == other.itbyten && prdastdly == other.prdastdly && pstastdly == other.pstastdly && itbytdly == other.itbytdly);
+}
+
+// "Not equal to" operator for SPIDelays
+bool CP2130::SPIDelays::operator !=(const CP2130::SPIDelays &other) const
+{
+    return !(operator ==(other));
+}
+
+// "Equal to" operator for SPIMode
+bool CP2130::SPIMode::operator ==(const CP2130::SPIMode &other) const
+{
+    return (csmode == other.csmode && cfrq == other.cfrq && cpol == other.cpol && cpha == other.cpha);
+}
+
+// "Not equal to" operator for SPIMode
+bool CP2130::SPIMode::operator !=(const CP2130::SPIMode &other) const
+{
+    return !(operator ==(other));
+}
+
+// "Equal to" operator for USBConfig
+bool CP2130::USBConfig::operator ==(const CP2130::USBConfig &other) const
+{
+    return (vid == other.vid && pid == other.pid && majrel == other.majrel && minrel == other.minrel && maxpow == other.maxpow && powmode == other.powmode && trfprio == other.trfprio);
+}
+
+// "Not equal to" operator for USBConfig
+bool CP2130::USBConfig::operator !=(const CP2130::USBConfig &other) const
+{
+    return !(operator ==(other));
+}
 
 CP2130::CP2130() :
     context_(nullptr),
@@ -138,6 +198,14 @@ void CP2130::enableCS(quint8 channel, int &errcnt, QString &errstr) const
         };
         controlTransfer(0x40, 0x25, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
     }
+}
+
+// Returns the current clock divider value
+quint8 CP2130::getClockDivider(int &errcnt, QString &errstr) const
+{
+    unsigned char controlBufferIn[1];
+    controlTransfer(0xC0, 0x46, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
+    return controlBufferIn[0];
 }
 
 // Returns the chip select status for a given channel
@@ -345,6 +413,17 @@ QString CP2130::getSerialDesc(int &errcnt, QString &errstr) const
     return serial;
 }
 
+// Returns the CP2130 silicon, read-only version
+CP2130::SiliconVersion CP2130::getSiliconVersion(int &errcnt, QString &errstr) const
+{
+    SiliconVersion version;
+    unsigned char controlBufferIn[2];
+    controlTransfer(0xC0, 0x11, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
+    version.maj = controlBufferIn[0];  // Major read-only version corresponds to byte 0
+    version.min = controlBufferIn[1];  // Minor read-only version corresponds to byte 1
+    return version;
+}
+
 // Returns the SPI delays for a given channel
 CP2130::SPIDelays CP2130::getSPIDelays(quint8 channel, int &errcnt, QString &errstr) const
 {
@@ -441,6 +520,15 @@ void CP2130::selectCS(quint8 channel, int &errcnt, QString &errstr) const
         0x02      // Only the corresponding chip select is enabled, all the others are disabled
     };
     controlTransfer(0x40, 0x25, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+}
+
+// Sets the clock divider value
+void CP2130::setClockDivider(quint8 value, int &errcnt, QString &errstr) const
+{
+    unsigned char controlBufferOut[1] = {
+        value  // Intended clock divider value (GPIO.5 clock frequency = 24 MHz / divider)
+    };
+    controlTransfer(0x40, 0x47, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
 }
 
 // Sets the GPIO.1 pin on the CP2130 to a given value

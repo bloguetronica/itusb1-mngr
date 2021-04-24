@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.4.2
+/* CP2130 class for Qt - Version 0.5.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -123,6 +123,17 @@ public:
         quint16 wkupmask;   // Wakeup pin mask bitmap (big-endian - see Silicon Labs AN792 for details)
         quint16 wkupmatch;  // Wakeup pin match bitmap (big-endian - see Silicon Labs AN792 for details)
         quint8 divider;     // GPIO.5/!CS5/CLKOUT OTP ROM clock divider value (see Silicon Labs AN792 for details)
+
+        bool operator ==(const PinConfig &other) const;
+        bool operator !=(const PinConfig &other) const;
+    };
+
+    struct SiliconVersion {
+        quint8 maj;  // Major read-only version
+        quint8 min;  // Minor read-only version
+
+        bool operator ==(const SiliconVersion &other) const;
+        bool operator !=(const SiliconVersion &other) const;
     };
 
     struct SPIDelays {
@@ -133,6 +144,9 @@ public:
         quint16 prdastdly;  // Pre-deassert delay (10us units, big-endian)
         quint16 pstastdly;  // Post-assert delay (10us units, big-endian)
         quint16 itbytdly;   // Inter-byte delay (10us units, big-endian)
+
+        bool operator ==(const SPIDelays &other) const;
+        bool operator !=(const SPIDelays &other) const;
     };
 
     struct SPIMode {
@@ -140,6 +154,9 @@ public:
         quint8 cfrq;  // Clock frequency
         bool cpol;    // Clock polarity
         bool cpha;    // Clock phase
+
+        bool operator ==(const SPIMode &other) const;
+        bool operator !=(const SPIMode &other) const;
     };
 
     struct USBConfig {
@@ -150,6 +167,9 @@ public:
         quint8 maxpow;   // Maximum consumption current (raw value in 2mA units)
         quint8 powmode;  // Power mode
         quint8 trfprio;  // Transfer priority
+
+        bool operator ==(const USBConfig &other) const;
+        bool operator !=(const USBConfig &other) const;
     };
 
     CP2130();
@@ -162,6 +182,7 @@ public:
     void disableCS(quint8 channel, int &errcnt, QString &errstr) const;
     void disableSPIDelays(quint8 channel, int &errcnt, QString &errstr) const;
     void enableCS(quint8 channel, int &errcnt, QString &errstr) const;
+    quint8 getClockDivider(int &errcnt, QString &errstr) const;
     bool getCS(quint8 channel, int &errcnt, QString &errstr) const;
     bool getGPIO1(int &errcnt, QString &errstr) const;
     bool getGPIO2(int &errcnt, QString &errstr) const;
@@ -178,6 +199,7 @@ public:
     PinConfig getPinConfig(int &errcnt, QString &errstr) const;
     QString getProductDesc(int &errcnt, QString &errstr) const;
     QString getSerialDesc(int &errcnt, QString &errstr) const;
+    SiliconVersion getSiliconVersion(int &errcnt, QString &errstr) const;
     SPIDelays getSPIDelays(quint8 channel, int &errcnt, QString &errstr) const;
     SPIMode getSPIMode(quint8 channel, int &errcnt, QString &errstr) const;
     USBConfig getUSBConfig(int &errcnt, QString &errstr) const;
@@ -187,6 +209,7 @@ public:
     void lockOTP(int &errcnt, QString &errstr) const;
     void reset(int &errcnt, QString &errstr) const;
     void selectCS(quint8 channel, int &errcnt, QString &errstr) const;
+    void setClockDivider(quint8 value, int &errcnt, QString &errstr) const;
     void setGPIO1(bool value, int &errcnt, QString &errstr) const;
     void setGPIO2(bool value, int &errcnt, QString &errstr) const;
     void setGPIO3(bool value, int &errcnt, QString &errstr) const;
