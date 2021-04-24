@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.4.1
+/* CP2130 class for Qt - Version 0.4.2
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -553,7 +553,7 @@ void CP2130::writeLockWord(quint16 word, int &errcnt, QString &errstr) const
 }
 
 // Writes the manufacturer descriptor to the CP2130 OTP ROM
-void CP2130::writeManufacturerDesc(QString manufacturer, int &errcnt, QString &errstr) const
+void CP2130::writeManufacturerDesc(const QString &manufacturer, int &errcnt, QString &errstr) const
 {
     int strsize = manufacturer.size();
     if (strsize > 62) {
@@ -588,7 +588,7 @@ void CP2130::writeManufacturerDesc(QString manufacturer, int &errcnt, QString &e
 }
 
 // Writes the pin configuration to the CP2130 OTP ROM
-void CP2130::writePinConfig(PinConfig config, int &errcnt, QString &errstr) const
+void CP2130::writePinConfig(const PinConfig &config, int &errcnt, QString &errstr) const
 {
     unsigned char controlBufferOut[20] = {
         config.gpio0,                                                                       // GPIO.0 pin config
@@ -612,7 +612,7 @@ void CP2130::writePinConfig(PinConfig config, int &errcnt, QString &errstr) cons
 }
 
 // Writes the product descriptor to the CP2130 OTP ROM
-void CP2130::writeProductDesc(QString product, int &errcnt, QString &errstr) const
+void CP2130::writeProductDesc(const QString &product, int &errcnt, QString &errstr) const
 {
     int strsize = product.size();
     if (strsize > 62) {
@@ -647,7 +647,7 @@ void CP2130::writeProductDesc(QString product, int &errcnt, QString &errstr) con
 }
 
 // Writes the serial descriptor to the CP2130 OTP ROM
-void CP2130::writeSerialDesc(QString serial, int &errcnt, QString &errstr) const
+void CP2130::writeSerialDesc(const QString &serial, int &errcnt, QString &errstr) const
 {
     int strsize = serial.size();
     if (strsize > 30) {
@@ -671,7 +671,7 @@ void CP2130::writeSerialDesc(QString serial, int &errcnt, QString &errstr) const
 }
 
 // Writes the USB configuration to the CP2130 OTP ROM
-void CP2130::writeUSBConfig(USBConfig config, quint8 mask, int &errcnt, QString &errstr) const
+void CP2130::writeUSBConfig(const USBConfig &config, quint8 mask, int &errcnt, QString &errstr) const
 {
     unsigned char controlBufferOut[10] = {
         static_cast<quint8>(config.vid), static_cast<quint8>(config.vid >> 8),  // VID

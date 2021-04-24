@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.4.1
+/* CP2130 class for Qt - Version 0.4.2
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -198,11 +198,11 @@ public:
     void setGPIO9(bool value, int &errcnt, QString &errstr) const;
     void setGPIO10(bool value, int &errcnt, QString &errstr) const;
     void writeLockWord(quint16 word, int &errcnt, QString &errstr) const;
-    void writeManufacturerDesc(QString manufacturer, int &errcnt, QString &errstr) const;
-    void writePinConfig(PinConfig config, int &errcnt, QString &errstr) const;
-    void writeProductDesc(QString product, int &errcnt, QString &errstr) const;
-    void writeSerialDesc(QString serial, int &errcnt, QString &errstr) const;
-    void writeUSBConfig(USBConfig config, quint8 mask, int &errcnt, QString &errstr) const;
+    void writeManufacturerDesc(const QString &manufacturer, int &errcnt, QString &errstr) const;
+    void writePinConfig(const PinConfig &config, int &errcnt, QString &errstr) const;
+    void writeProductDesc(const QString &product, int &errcnt, QString &errstr) const;
+    void writeSerialDesc(const QString &serial, int &errcnt, QString &errstr) const;
+    void writeUSBConfig(const USBConfig &config, quint8 mask, int &errcnt, QString &errstr) const;
 
     void close();
     int open(quint16 vid, quint16 pid, const QString &serial);
