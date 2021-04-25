@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.5.0
+/* CP2130 class for Qt - Version 0.6.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -34,8 +34,12 @@ private:
 
 public:
     // Class definitions
-    static const quint16 VID = 0x10C4;  // Default USB vendor ID
-    static const quint16 PID = 0x87A0;  // Default USB product ID
+    static const quint16 VID = 0x10C4;     // Default USB vendor ID
+    static const quint16 PID = 0x87A0;     // Default USB product ID
+    static const quint8 READ = 0x00;       // Read command, to be used with bulkTransfer()
+    static const quint8 WRITE = 0x01;      // Write command, to be used with bulkTransfer()
+    static const quint8 WRITEREAD = 0x02;  // WriteRead command, to be used with bulkTransfer()
+    static const quint8 READWRTR = 0x04;   // ReadWithRTR command, to be used with bulkTransfer()
 
     // The following masks are applicable to the value returned by getLockWord()
     static const quint16 LWVID = 0x0001;      // Mask for the vendor ID lock bit
@@ -74,10 +78,10 @@ public:
     static const quint8 PCCS = 0x03;         // GPIO as chip select
     static const quint8 PCNRTR = 0x04;       // GPIO as !RTR input, only applicable to GPIO.3
     static const quint8 PCRTR = 0x05;        // GPIO as RTR input, only applicable to GPIO.3
-    static const quint8 PCEVTCNTRRE = 0x04;  // GPIO as EVTCNTR rising edge input, only applicable to GPIO.4
-    static const quint8 PCEVTCNTRFE = 0x05;  // GPIO as EVTCNTR falling edge input, only applicable to GPIO.4
-    static const quint8 PCEVTCNTRNP = 0x06;  // GPIO as EVTCNTR negative pulse input, only applicable to GPIO.4
-    static const quint8 PCEVTCNTRPP = 0x07;  // GPIO as EVTCNTR positive pulse input, only applicable to GPIO.4
+    static const quint8 PCEVTCNTRRE = 0x04;  // GPIO as EVTCNTR rising edge input, only applicable to GPIO.4 - Also applicable to getEventCounter()/setEventCounter()
+    static const quint8 PCEVTCNTRFE = 0x05;  // GPIO as EVTCNTR falling edge input, only applicable to GPIO.4 - Also applicable to getEventCounter()/setEventCounter()
+    static const quint8 PCEVTCNTRNP = 0x06;  // GPIO as EVTCNTR negative pulse input, only applicable to GPIO.4 - Also applicable to getEventCounter()/setEventCounter()
+    static const quint8 PCEVTCNTRPP = 0x07;  // GPIO as EVTCNTR positive pulse input, only applicable to GPIO.4 - Also applicable to getEventCounter()/setEventCounter()
     static const quint8 PCCLKOUT = 0x04;     // GPIO as CLKOUT push-pull output, only applicable to GPIO.5
     static const quint8 PCSPIACT = 0x04;     // GPIO as SPIACT push-pull output, only applicable to GPIO.8
     static const quint8 PCSSPND = 0x04;      // GPIO as SUSPEND push-pull output, only applicable to GPIO.9
@@ -105,6 +109,15 @@ public:
     static const quint8 PMSELFREGEN = 0x02;  // Value corresponding to USB self-powered mode with voltage regulator enabled
     static const quint8 PRIOREAD = 0x00;     // Value corresponding to data transfer with high priority read
     static const quint8 PRIOWRITE = 0x01;    // Value corresponding to data transfer with high priority write
+
+    struct EventCounter {
+        bool overflow;  // Overflow flag
+        quint8 mode;    // GPIO.4/EVTCNTR pin mode (see the values applicable to PinConfig/getPinConfig()/writePinConfig())
+        quint16 value;  // Count value
+
+        bool operator ==(const EventCounter &other) const;
+        bool operator !=(const EventCounter &other) const;
+    };
 
     struct PinConfig {
         quint8 gpio0;       // GPIO.0 pin config
@@ -184,6 +197,8 @@ public:
     void enableCS(quint8 channel, int &errcnt, QString &errstr) const;
     quint8 getClockDivider(int &errcnt, QString &errstr) const;
     bool getCS(quint8 channel, int &errcnt, QString &errstr) const;
+    EventCounter getEventCounter(int &errcnt, QString &errstr) const;
+    quint8 getFIFOThreshold(int &errcnt, QString &errstr) const;
     bool getGPIO1(int &errcnt, QString &errstr) const;
     bool getGPIO2(int &errcnt, QString &errstr) const;
     bool getGPIO3(int &errcnt, QString &errstr) const;
@@ -206,10 +221,13 @@ public:
     bool isOpen() const;
     bool isOTPBlank(int &errcnt, QString &errstr) const;
     bool isOTPLocked(int &errcnt, QString &errstr) const;
+    bool isRTRActive(int &errcnt, QString &errstr) const;
     void lockOTP(int &errcnt, QString &errstr) const;
     void reset(int &errcnt, QString &errstr) const;
     void selectCS(quint8 channel, int &errcnt, QString &errstr) const;
     void setClockDivider(quint8 value, int &errcnt, QString &errstr) const;
+    void setEventCounter(EventCounter evcntr, int &errcnt, QString &errstr) const;
+    void setFIFOThreshold(quint8 threshold, int &errcnt, QString &errstr) const;
     void setGPIO1(bool value, int &errcnt, QString &errstr) const;
     void setGPIO2(bool value, int &errcnt, QString &errstr) const;
     void setGPIO3(bool value, int &errcnt, QString &errstr) const;
@@ -220,6 +238,7 @@ public:
     void setGPIO8(bool value, int &errcnt, QString &errstr) const;
     void setGPIO9(bool value, int &errcnt, QString &errstr) const;
     void setGPIO10(bool value, int &errcnt, QString &errstr) const;
+    void stopRTR(int &errcnt, QString &errstr) const;
     void writeLockWord(quint16 word, int &errcnt, QString &errstr) const;
     void writeManufacturerDesc(const QString &manufacturer, int &errcnt, QString &errstr) const;
     void writePinConfig(const PinConfig &config, int &errcnt, QString &errstr) const;

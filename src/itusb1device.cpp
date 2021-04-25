@@ -32,7 +32,7 @@ quint16 ITUSB1Device::getRawCurrent(int &errcnt, QString &errstr) const
 {
     unsigned char readCommandBuffer[8] = {
         0x00, 0x00,             // Reserved
-        0x00,                   // Read command
+        CP2130::READ,           // Read command
         0x00,                   // Reserved
         0x02, 0x00, 0x00, 0x00  // Two bytes to read
     };

@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.5.0
+/* CP2130 class for Qt - Version 0.6.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -28,6 +28,18 @@ extern "C" {
 // Definitions
 const quint16 MEM_KEY = 0xA5F1;
 const unsigned int TR_TIMEOUT = 100;  // Transfer timeout in milliseconds
+
+// "Equal to" operator for EventCounter
+bool CP2130::EventCounter::operator ==(const CP2130::EventCounter &other) const
+{
+    return (overflow == other.overflow && mode == other.mode && value == other.value);
+}
+
+// "Not equal to" operator for EventCounter
+bool CP2130::EventCounter::operator !=(const CP2130::EventCounter &other) const
+{
+    return !(operator ==(other));
+}
 
 // "Equal to" operator for PinConfig
 bool CP2130::PinConfig::operator ==(const CP2130::PinConfig &other) const
@@ -222,6 +234,26 @@ bool CP2130::getCS(quint8 channel, int &errcnt, QString &errstr) const
         retval = ((0x01 << channel & (controlBufferIn[0] << 8 | controlBufferIn[1])) != 0x00);
     }
     return retval;
+}
+
+// Gets the event counter, including mode and value
+CP2130::EventCounter CP2130::getEventCounter(int &errcnt, QString &errstr) const
+{
+    CP2130::EventCounter evtcntr;
+    unsigned char controlBufferIn[3];
+    controlTransfer(0xC0, 0x44, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
+    evtcntr.overflow = ((0x80 & controlBufferIn[0]) != 0x00);                            //
+    evtcntr.mode = 0x07 & controlBufferIn[0];                                            // GPIO.4/EVTCNTR pin mode corresponds to bits 3:0 of byte 0
+    evtcntr.value = static_cast<quint16>(controlBufferIn[1] << 8 | controlBufferIn[2]);  // Event count value corresponds to bytes 1 and 2 (big-endian conversion)
+    return evtcntr;
+}
+
+// Gets the full FIFO threshold
+quint8 CP2130::getFIFOThreshold(int &errcnt, QString &errstr) const
+{
+    unsigned char controlBufferIn[1];
+    controlTransfer(0xC0, 0x34, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
+    return controlBufferIn[0];
 }
 
 // Returns the current value of the GPIO.1 pin on the CP2130
@@ -500,6 +532,14 @@ bool CP2130::isOTPLocked(int &errcnt, QString &errstr) const
     return ((LWALL & getLockWord(errcnt, errstr)) == 0x0000);  // Note that the reserved bits are ignored
 }
 
+// Returns true if a ReadWithRTR command is currently active
+bool CP2130::isRTRActive(int &errcnt, QString &errstr) const
+{
+    unsigned char controlBufferIn[1];
+    controlTransfer(0xC0, 0x36, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
+    return (controlBufferIn[0] == 0x01);
+}
+
 // Locks the OTP ROM of the CP2130, preventing further changes
 void CP2130::lockOTP(int &errcnt, QString &errstr) const
 {
@@ -529,6 +569,25 @@ void CP2130::setClockDivider(quint8 value, int &errcnt, QString &errstr) const
         value  // Intended clock divider value (GPIO.5 clock frequency = 24 MHz / divider)
     };
     controlTransfer(0x40, 0x47, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+}
+
+// Sets the event counter
+void CP2130::setEventCounter(EventCounter evcntr, int &errcnt, QString &errstr) const
+{
+    unsigned char controlBufferOut[3] = {
+        static_cast<quint8>(0x07 & evcntr.mode),                                   // Set GPIO.4/EVTCNTR pin mode
+        static_cast<quint8>(evcntr.value >> 8), static_cast<quint8>(evcntr.value)  // Set the event count value
+    };
+    controlTransfer(0x40, 0x45, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+}
+
+// Sets the full FIFO threshold
+void CP2130::setFIFOThreshold(quint8 threshold, int &errcnt, QString &errstr) const
+{
+    unsigned char controlBufferOut[1] = {
+        threshold  // Intended FIFO threshold
+    };
+    controlTransfer(0x40, 0x35, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
 }
 
 // Sets the GPIO.1 pin on the CP2130 to a given value
@@ -631,6 +690,15 @@ void CP2130::setGPIO10(bool value, int &errcnt, QString &errstr) const
     controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
 }
 
+// Aborts the current ReadWithRTR command
+void CP2130::stopRTR(int &errcnt, QString &errstr) const
+{
+    unsigned char controlBufferOut[1] = {
+        0x01
+    };
+    controlTransfer(0x40, 0x37, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+}
+
 // This procedure is used to lock fields in the CP2130 OTP ROM - Use with care!
 void CP2130::writeLockWord(quint16 word, int &errcnt, QString &errstr) const
 {
@@ -679,22 +747,22 @@ void CP2130::writeManufacturerDesc(const QString &manufacturer, int &errcnt, QSt
 void CP2130::writePinConfig(const PinConfig &config, int &errcnt, QString &errstr) const
 {
     unsigned char controlBufferOut[20] = {
-        config.gpio0,                                                                       // GPIO.0 pin config
-        config.gpio1,                                                                       // GPIO.1 pin config
-        config.gpio2,                                                                       // GPIO.2 pin config
-        config.gpio3,                                                                       // GPIO.3 pin config
-        config.gpio4,                                                                       // GPIO.4 pin config
-        config.gpio5,                                                                       // GPIO.5 pin config
-        config.gpio6,                                                                       // GPIO.6 pin config
-        config.gpio7,                                                                       // GPIO.7 pin config
-        config.gpio8,                                                                       // GPIO.8 pin config
-        config.gpio9,                                                                       // GPIO.9 pin config
-        config.gpio10,                                                                      // GPIO.10 pin config
-        static_cast<quint8>(config.sspndlvl >> 8), static_cast<quint8>(config.sspndlvl),    // Suspend pin level bitmap
-        static_cast<quint8>(config.sspndmode >> 8), static_cast<quint8>(config.sspndmode),  // Suspend pin mode bitmap
-        static_cast<quint8>(config.wkupmask >> 8), static_cast<quint8>(config.wkupmask),    // Wakeup pin mask bitmap
-        static_cast<quint8>(config.wkupmatch >> 8), static_cast<quint8>(config.wkupmatch),  // Wakeup pin match bitmap
-        config.divider                                                                      // Clock divider
+        config.gpio0,                                                                              // GPIO.0 pin config
+        config.gpio1,                                                                              // GPIO.1 pin config
+        config.gpio2,                                                                              // GPIO.2 pin config
+        config.gpio3,                                                                              // GPIO.3 pin config
+        config.gpio4,                                                                              // GPIO.4 pin config
+        config.gpio5,                                                                              // GPIO.5 pin config
+        config.gpio6,                                                                              // GPIO.6 pin config
+        config.gpio7,                                                                              // GPIO.7 pin config
+        config.gpio8,                                                                              // GPIO.8 pin config
+        config.gpio9,                                                                              // GPIO.9 pin config
+        config.gpio10,                                                                             // GPIO.10 pin config
+        static_cast<quint8>(0x7F & config.sspndlvl >> 8), static_cast<quint8>(config.sspndlvl),    // Suspend pin level bitmap
+        static_cast<quint8>(config.sspndmode >> 8), static_cast<quint8>(config.sspndmode),         // Suspend pin mode bitmap
+        static_cast<quint8>(0x7F & config.wkupmask >> 8), static_cast<quint8>(config.wkupmask),    // Wakeup pin mask bitmap
+        static_cast<quint8>(0x7F & config.wkupmatch >> 8), static_cast<quint8>(config.wkupmatch),  // Wakeup pin match bitmap
+        config.divider                                                                             // Clock divider
     };
     controlTransfer(0x40, 0x6D, MEM_KEY, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
 }
