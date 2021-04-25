@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.6.0
+/* CP2130 class for Qt - Version 0.6.1
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -113,7 +113,7 @@ public:
     struct EventCounter {
         bool overflow;  // Overflow flag
         quint8 mode;    // GPIO.4/EVTCNTR pin mode (see the values applicable to PinConfig/getPinConfig()/writePinConfig())
-        quint16 value;  // Count value
+        quint16 value;  // Count value (big-endian)
 
         bool operator ==(const EventCounter &other) const;
         bool operator !=(const EventCounter &other) const;
