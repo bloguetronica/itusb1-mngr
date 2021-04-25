@@ -572,7 +572,7 @@ void CP2130::setClockDivider(quint8 value, int &errcnt, QString &errstr) const
 }
 
 // Sets the event counter
-void CP2130::setEventCounter(EventCounter evcntr, int &errcnt, QString &errstr) const
+void CP2130::setEventCounter(const EventCounter &evcntr, int &errcnt, QString &errstr) const
 {
     unsigned char controlBufferOut[3] = {
         static_cast<quint8>(0x07 & evcntr.mode),                                   // Set GPIO.4/EVTCNTR pin mode

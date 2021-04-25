@@ -226,7 +226,7 @@ public:
     void reset(int &errcnt, QString &errstr) const;
     void selectCS(quint8 channel, int &errcnt, QString &errstr) const;
     void setClockDivider(quint8 value, int &errcnt, QString &errstr) const;
-    void setEventCounter(EventCounter evcntr, int &errcnt, QString &errstr) const;
+    void setEventCounter(const EventCounter &evcntr, int &errcnt, QString &errstr) const;
     void setFIFOThreshold(quint8 threshold, int &errcnt, QString &errstr) const;
     void setGPIO1(bool value, int &errcnt, QString &errstr) const;
     void setGPIO2(bool value, int &errcnt, QString &errstr) const;
