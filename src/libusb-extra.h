@@ -1,4 +1,4 @@
-/* Extra functions for libusb - Version 1.3
+/* Extra functions for libusb - Version 1.0.3
    Copyright (c) 2018-2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it

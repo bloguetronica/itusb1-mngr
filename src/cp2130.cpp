@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 0.6.1
+/* CP2130 class for Qt - Version 1.0.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -26,7 +26,7 @@ extern "C" {
 }
 
 // Definitions
-const quint16 MEM_KEY = 0xA5F1;
+const quint16 MEM_KEY = 0xA5F1;       // OTP ROM write key
 const unsigned int TR_TIMEOUT = 100;  // Transfer timeout in milliseconds
 
 // "Equal to" operator for EventCounter
