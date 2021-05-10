@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 1.0.0
+/* CP2130 class for Qt - Version 1.1.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -22,7 +22,8 @@
 #define CP2130_H
 
 // Includes
-#include <QStringList>  // Also includes QString
+#include <QString>
+#include <QStringList>
 #include <libusb-1.0/libusb.h>
 
 class CP2130
@@ -86,22 +87,23 @@ public:
     static const quint8 PCSPIACT = 0x04;     // GPIO as SPIACT push-pull output, only applicable to GPIO.8
     static const quint8 PCSSPND = 0x04;      // GPIO as SUSPEND push-pull output, only applicable to GPIO.9
     static const quint8 PCNSSPND = 0x04;     // GPIO as !SUSPEND push-pull output, only applicable to GPIO.10
-    static const quint16 BMSCK = 0x0001;     // SCK pin bitmap value
-    static const quint16 BMMISO = 0x0002;    // MISO pin bitmap value
-    static const quint16 BMMOSI = 0x0004;    // MOSI pin bitmap value
-    static const quint16 BMGPIO0 = 0x0008;   // GPIO.0 pin bitmap value
-    static const quint16 BMGPIO1 = 0x0010;   // GPIO.1 pin bitmap value
-    static const quint16 BMGPIO2 = 0x0020;   // GPIO.2 pin bitmap value
-    static const quint16 BMGPIO3 = 0x0040;   // GPIO.3 pin bitmap value
-    static const quint16 BMGPIO4 = 0x0080;   // GPIO.4 pin bitmap value
-    static const quint16 BMGPIO5 = 0x0100;   // GPIO.5 pin bitmap value
-    static const quint16 BMVPP = 0x0200;     // VPP pin bitmap value
-    static const quint16 BMGPIO6 = 0x0400;   // GPIO.6 pin bitmap value
-    static const quint16 BMGPIO7 = 0x0800;   // GPIO.7 pin bitmap value
-    static const quint16 BMGPIO8 = 0x1000;   // GPIO.8 pin bitmap value
-    static const quint16 BMGPIO9 = 0x2000;   // GPIO.9 pin bitmap value
-    static const quint16 BMGPIO10 = 0x4000;  // GPIO.10 pin bitmap value
-    static const quint16 BMENABLE = 0x8000;  // Suspend mode and level enable bitmap value, only applicable to PinConfig.sspndmode (suspend pin mode bitmap)
+    static const quint16 BMSCK = 0x0001;     // Bitmap for the SCK pin
+    static const quint16 BMMISO = 0x0002;    // Bitmap for the MISO pin
+    static const quint16 BMMOSI = 0x0004;    // Bitmap for the MOSI pin
+    static const quint16 BMGPIO0 = 0x0008;   // Bitmap for the GPIO.0 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO1 = 0x0010;   // Bitmap for the GPIO.1 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO2 = 0x0020;   // Bitmap for the GPIO.2 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO3 = 0x0040;   // Bitmap for the GPIO.3 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO4 = 0x0080;   // Bitmap for the GPIO.4 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO5 = 0x0100;   // Bitmap for the GPIO.5 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMVPP = 0x0200;     // Bitmap for the VPP pin
+    static const quint16 BMGPIO6 = 0x0400;   // Bitmap for the GPIO.6 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO7 = 0x0800;   // Bitmap for the GPIO.7 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO8 = 0x1000;   // Bitmap for the GPIO.8 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO9 = 0x2000;   // Bitmap for the GPIO.9 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIO10 = 0x4000;  // Bitmap for the GPIO.10 pin - Also applicable to getGPIOs()/setGPIOs()
+    static const quint16 BMGPIOS = 0x7DF8;   // Bitmap for all GPIO pins
+    static const quint16 BMENABLE = 0x8000;  // Bitmap for suspend mode and level enable, only applicable to PinConfig.sspndmode (suspend pin mode bitmap)
 
     // The following values are applicable to USBConfig/getUSBConfig()/writeUSBConfig()
     static const quint8 PMBUSREGEN = 0x00;   // Value corresponding to USB bus-powered mode with voltage regulator enabled
@@ -199,6 +201,7 @@ public:
     bool getCS(quint8 channel, int &errcnt, QString &errstr) const;
     EventCounter getEventCounter(int &errcnt, QString &errstr) const;
     quint8 getFIFOThreshold(int &errcnt, QString &errstr) const;
+    bool getGPIO0(int &errcnt, QString &errstr) const;
     bool getGPIO1(int &errcnt, QString &errstr) const;
     bool getGPIO2(int &errcnt, QString &errstr) const;
     bool getGPIO3(int &errcnt, QString &errstr) const;
@@ -209,6 +212,7 @@ public:
     bool getGPIO8(int &errcnt, QString &errstr) const;
     bool getGPIO9(int &errcnt, QString &errstr) const;
     bool getGPIO10(int &errcnt, QString &errstr) const;
+    quint16 getGPIOs(int &errcnt, QString &errstr) const;
     quint16 getLockWord(int &errcnt, QString &errstr) const;
     QString getManufacturerDesc(int &errcnt, QString &errstr) const;
     PinConfig getPinConfig(int &errcnt, QString &errstr) const;
@@ -228,6 +232,7 @@ public:
     void setClockDivider(quint8 value, int &errcnt, QString &errstr) const;
     void setEventCounter(const EventCounter &evcntr, int &errcnt, QString &errstr) const;
     void setFIFOThreshold(quint8 threshold, int &errcnt, QString &errstr) const;
+    void setGPIO0(bool value, int &errcnt, QString &errstr) const;
     void setGPIO1(bool value, int &errcnt, QString &errstr) const;
     void setGPIO2(bool value, int &errcnt, QString &errstr) const;
     void setGPIO3(bool value, int &errcnt, QString &errstr) const;
@@ -238,6 +243,7 @@ public:
     void setGPIO8(bool value, int &errcnt, QString &errstr) const;
     void setGPIO9(bool value, int &errcnt, QString &errstr) const;
     void setGPIO10(bool value, int &errcnt, QString &errstr) const;
+    void setGPIOs(quint16 bmValues, quint16 bmMask, int &errcnt, QString &errstr) const;
     void stopRTR(int &errcnt, QString &errstr) const;
     void writeLockWord(quint16 word, int &errcnt, QString &errstr) const;
     void writeManufacturerDesc(const QString &manufacturer, int &errcnt, QString &errstr) const;

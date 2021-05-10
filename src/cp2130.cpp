@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 1.0.0
+/* CP2130 class for Qt - Version 1.1.0
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -118,7 +118,7 @@ void CP2130::bulkTransfer(quint8 endpoint, unsigned char *data, int length, int 
 {
     if (!isOpen()) {
         errcnt += 1;
-        errstr.append(QObject::tr("In bulkTransfer(): device is not open.\n"));  // Programmer error
+        errstr.append(QObject::tr("In bulkTransfer(): device is not open.\n"));  // Program logic error
     } else if (libusb_bulk_transfer(handle_, endpoint, data, length, transferred, TR_TIMEOUT) != 0) {
         errcnt += 1;
         if (endpoint < 0x80) {
@@ -157,7 +157,7 @@ void CP2130::controlTransfer(quint8 bmRequestType, quint8 bRequest, quint16 wVal
 {
     if (!isOpen()) {
         errcnt += 1;
-        errstr.append(QObject::tr("In controlTransfer(): device is not open.\n"));  // Programmer error
+        errstr.append(QObject::tr("In controlTransfer(): device is not open.\n"));  // Program logic error
     } else if (libusb_control_transfer(handle_, bmRequestType, bRequest, wValue, wIndex, data, wLength, TR_TIMEOUT) != wLength) {
         errcnt += 1;
         errstr.append(QObject::tr("Failed control transfer (0x%1, 0x%2).\n").arg(bmRequestType, 2, 16, QChar('0')).arg(bRequest, 2, 16, QChar('0')));
@@ -169,7 +169,7 @@ void CP2130::disableCS(quint8 channel, int &errcnt, QString &errstr) const
 {
     if (channel > 10) {
         errcnt += 1;
-        errstr.append(QObject::tr("In disableCS(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        errstr.append(QObject::tr("In disableCS(): SPI channel value must be between 0 and 10.\n"));  // Program logic error
     } else {
         unsigned char controlBufferOut[2] = {
             channel,  // Selected channel
@@ -184,7 +184,7 @@ void CP2130::disableSPIDelays(quint8 channel, int &errcnt, QString &errstr) cons
 {
     if (channel > 10) {
         errcnt += 1;
-        errstr.append(QObject::tr("In disableSPIDelays(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        errstr.append(QObject::tr("In disableSPIDelays(): SPI channel value must be between 0 and 10.\n"));  // Program logic error
     } else {
         unsigned char controlBufferOut[8] = {
             channel,     // Selected channel
@@ -202,7 +202,7 @@ void CP2130::enableCS(quint8 channel, int &errcnt, QString &errstr) const
 {
     if (channel > 10) {
         errcnt += 1;
-        errstr.append(QObject::tr("In enableCS(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        errstr.append(QObject::tr("In enableCS(): SPI channel value must be between 0 and 10.\n"));  // Program logic error
     } else {
         unsigned char controlBufferOut[2] = {
             channel,  // Selected channel
@@ -226,7 +226,7 @@ bool CP2130::getCS(quint8 channel, int &errcnt, QString &errstr) const
     bool retval;
     if (channel > 10) {
         errcnt += 1;
-        errstr.append(QObject::tr("In getCS(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        errstr.append(QObject::tr("In getCS(): SPI channel value must be between 0 and 10.\n"));  // Program logic error
         retval = false;
     } else {
         unsigned char controlBufferIn[4];
@@ -256,84 +256,78 @@ quint8 CP2130::getFIFOThreshold(int &errcnt, QString &errstr) const
     return controlBufferIn[0];
 }
 
+// Returns the current value of the GPIO.0 pin on the CP2130
+bool CP2130::getGPIO0(int &errcnt, QString &errstr) const
+{
+    return ((BMGPIO0 & getGPIOs(errcnt, errstr)) != 0x0000);
+}
+
 // Returns the current value of the GPIO.1 pin on the CP2130
 bool CP2130::getGPIO1(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x10 & controlBufferIn[1]) != 0x00);  // Returns one if bit 4 of byte 1, which corresponds to the GPIO.1 pin, is not set to zero
+    return ((BMGPIO1 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.2 pin on the CP2130
 bool CP2130::getGPIO2(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x20 & controlBufferIn[1]) != 0x00);  // Returns one if bit 5 of byte 1, which corresponds to the GPIO.2 pin, is not set to zero
+    return ((BMGPIO2 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.3 pin on the CP2130
 bool CP2130::getGPIO3(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x40 & controlBufferIn[1]) != 0x00);  // Returns one if bit 6 of byte 1, which corresponds to the GPIO.3 pin, is not set to zero
+    return ((BMGPIO3 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.4 pin on the CP2130
 bool CP2130::getGPIO4(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x80 & controlBufferIn[1]) != 0x00);  // Returns one if bit 7 of byte 1, which corresponds to the GPIO.4 pin, is not set to zero
+    return ((BMGPIO4 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.5 pin on the CP2130
 bool CP2130::getGPIO5(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x01 & controlBufferIn[0]) != 0x00);  // Returns one if bit 0 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((BMGPIO5 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.6 pin on the CP2130
 bool CP2130::getGPIO6(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x04 & controlBufferIn[0]) != 0x00);  // Returns one if bit 2 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((BMGPIO6 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.7 pin on the CP2130
 bool CP2130::getGPIO7(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x08 & controlBufferIn[0]) != 0x00);  // Returns one if bit 3 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((BMGPIO7 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.8 pin on the CP2130
 bool CP2130::getGPIO8(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x10 & controlBufferIn[0]) != 0x00);  // Returns one if bit 4 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((BMGPIO8 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.9 pin on the CP2130
 bool CP2130::getGPIO9(int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferIn[2];
-    controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x20 & controlBufferIn[0]) != 0x00);  // Returns one if bit 5 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return ((BMGPIO9 & getGPIOs(errcnt, errstr)) != 0x0000);
 }
 
 // Returns the current value of the GPIO.10 pin on the CP2130
 bool CP2130::getGPIO10(int &errcnt, QString &errstr) const
 {
+    return ((BMGPIO10 & getGPIOs(errcnt, errstr)) != 0x0000);
+}
+
+// Returns the value of all GPIO pins on the CP2130, in bitmap format
+quint16 CP2130::getGPIOs(int &errcnt, QString &errstr) const
+{
     unsigned char controlBufferIn[2];
     controlTransfer(0xC0, 0x20, 0x0000, 0x0000, controlBufferIn, static_cast<quint16>(sizeof(controlBufferIn)), errcnt, errstr);
-    return ((0x40 & controlBufferIn[0]) != 0x00);  // Returns one if bit 6 of byte 0, which corresponds to the GPIO.5 pin, is not set to zero
+    return static_cast<quint16>(BMGPIOS & (controlBufferIn[0] << 8 | controlBufferIn[1]));  // Returns the value of every GPIO pin in bitmap format (big-endian conversion)
 }
 
 // Returns the lock word from the CP2130 OTP ROM
@@ -462,7 +456,7 @@ CP2130::SPIDelays CP2130::getSPIDelays(quint8 channel, int &errcnt, QString &err
     SPIDelays delays;
     if (channel > 10) {
         errcnt += 1;
-        errstr.append(QObject::tr("In getSPIDelays(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        errstr.append(QObject::tr("In getSPIDelays(): SPI channel value must be between 0 and 10.\n"));  // Program logic error
         delays = {false, false, false, false, 0x0000, 0x0000, 0x0000};
     } else {
         unsigned char controlBufferIn[8];
@@ -485,7 +479,7 @@ CP2130::SPIMode CP2130::getSPIMode(quint8 channel, int &errcnt, QString &errstr)
     SPIMode mode;
     if (channel > 10) {
         errcnt += 1;
-        errstr.append(QObject::tr("In getSPIMode(): SPI channel value must be between 0 and 10.\n"));  // Programmer error
+        errstr.append(QObject::tr("In getSPIMode(): SPI channel value must be between 0 and 10.\n"));  // Program logic error
         mode = {false, 0x00, false, false};
     } else {
         unsigned char controlBufferIn[11];
@@ -590,102 +584,78 @@ void CP2130::setFIFOThreshold(quint8 threshold, int &errcnt, QString &errstr) co
     controlTransfer(0x40, 0x35, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
 }
 
+// Sets the GPIO.0 pin on the CP2130 to a given value
+void CP2130::setGPIO0(bool value, int &errcnt, QString &errstr) const
+{
+    setGPIOs(BMGPIOS * value, BMGPIO0, errcnt, errstr);
+}
+
 // Sets the GPIO.1 pin on the CP2130 to a given value
 void CP2130::setGPIO1(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        0x00, static_cast<quint8>(value << 4),  // Set the value of GPIO.1 to the intended value
-        0x00, 0x10                              // Set the mask so that only GPIO.1 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO1, errcnt, errstr);
 }
 
 // Sets the GPIO.2 pin on the CP2130 to a given value
 void CP2130::setGPIO2(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        0x00, static_cast<quint8>(value << 5),  // Set the value of GPIO.2 to the intended value
-        0x00, 0x20                              // Set the mask so that only GPIO.2 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO2, errcnt, errstr);
 }
 
 // Sets the GPIO.3 pin on the CP2130 to a given value
 void CP2130::setGPIO3(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        0x00, static_cast<quint8>(value << 6),  // Set the value of GPIO.3 to the intended value
-        0x00, 0x40                              // Set the mask so that only GPIO.3 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO3, errcnt, errstr);
 }
 
 // Sets the GPIO.4 pin on the CP2130 to a given value
 void CP2130::setGPIO4(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        0x00, static_cast<quint8>(value << 7),  // Set the value of GPIO.4 to the intended value
-        0x00, 0x80                              // Set the mask so that only GPIO.4 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO4, errcnt, errstr);
 }
 
 // Sets the GPIO.5 pin on the CP2130 to a given value
 void CP2130::setGPIO5(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        static_cast<quint8>(value), 0x00,  // Set the value of GPIO.5 to the intended value
-        0x01, 0x00                         // Set the mask so that only GPIO.5 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO5, errcnt, errstr);
 }
 
 // Sets the GPIO.6 pin on the CP2130 to a given value
 void CP2130::setGPIO6(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        static_cast<quint8>(value << 2), 0x00,  // Set the value of GPIO.6 to the intended value
-        0x04, 0x00                              // Set the mask so that only GPIO.6 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO6, errcnt, errstr);
 }
 
 // Sets the GPIO.7 pin on the CP2130 to a given value
 void CP2130::setGPIO7(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        static_cast<quint8>(value << 3), 0x00,  // Set the value of GPIO.7 to the intended value
-        0x08, 0x00                              // Set the mask so that only GPIO.7 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO7, errcnt, errstr);
 }
 
 // Sets the GPIO.8 pin on the CP2130 to a given value
 void CP2130::setGPIO8(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        static_cast<quint8>(value << 4), 0x00,  // Set the value of GPIO.8 to the intended value
-        0x10, 0x00                              // Set the mask so that only GPIO.8 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO8, errcnt, errstr);
 }
 
 // Sets the GPIO.9 pin on the CP2130 to a given value
 void CP2130::setGPIO9(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char controlBufferOut[4] = {
-        static_cast<quint8>(value << 5), 0x00,  // Set the value of GPIO.9 to the intended value
-        0x20, 0x00                              // Set the mask so that only GPIO.9 is changed
-    };
-    controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
+    setGPIOs(BMGPIOS * value, BMGPIO9, errcnt, errstr);
 }
 
 // Sets the GPIO.10 pin on the CP2130 to a given value
 void CP2130::setGPIO10(bool value, int &errcnt, QString &errstr) const
 {
+    setGPIOs(BMGPIOS * value, BMGPIO10, errcnt, errstr);
+}
+
+// Sets one or more GPIO pins on the CP2130 to the intended values, according to the values and mask bitmaps
+void CP2130::setGPIOs(quint16 bmValues, quint16 bmMask, int &errcnt, QString &errstr) const
+{
     unsigned char controlBufferOut[4] = {
-        static_cast<quint8>(value << 6), 0x00,  // Set the value of GPIO.10 to the intended value
-        0x40, 0x00                              // Set the mask so that only GPIO.10 is changed
+        static_cast<quint8>((BMGPIOS & bmValues) >> 8), static_cast<quint8>(BMGPIOS & bmValues),  // GPIO values bitmap
+        static_cast<quint8>((BMGPIOS & bmMask) >> 8), static_cast<quint8>(BMGPIOS & bmMask)       // Mask bitmap
     };
     controlTransfer(0x40, 0x21, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
 }
@@ -694,7 +664,7 @@ void CP2130::setGPIO10(bool value, int &errcnt, QString &errstr) const
 void CP2130::stopRTR(int &errcnt, QString &errstr) const
 {
     unsigned char controlBufferOut[1] = {
-        0x01
+        0x01  // Abort current ReadWithRTR command
     };
     controlTransfer(0x40, 0x37, 0x0000, 0x0000, controlBufferOut, static_cast<quint16>(sizeof(controlBufferOut)), errcnt, errstr);
 }
@@ -714,7 +684,7 @@ void CP2130::writeManufacturerDesc(const QString &manufacturer, int &errcnt, QSt
     int strsize = manufacturer.size();
     if (strsize > 62) {
         errcnt += 1;
-        errstr.append(QObject::tr("In writeManufacturerDesc(): manufacturer descriptor string cannot be longer than 62 characters.\n"));  // Programmer error
+        errstr.append(QObject::tr("In writeManufacturerDesc(): manufacturer descriptor string cannot be longer than 62 characters.\n"));  // Program logic error
     } else {
         int length = 2 * strsize + 2;
         unsigned char controlBufferOut[64];
@@ -773,7 +743,7 @@ void CP2130::writeProductDesc(const QString &product, int &errcnt, QString &errs
     int strsize = product.size();
     if (strsize > 62) {
         errcnt += 1;
-        errstr.append(QObject::tr("In writeProductDesc(): product descriptor string cannot be longer than 62 characters.\n"));  // Programmer error
+        errstr.append(QObject::tr("In writeProductDesc(): product descriptor string cannot be longer than 62 characters.\n"));  // Program logic error
     } else {
         int length = 2 * strsize + 2;
         unsigned char controlBufferOut[64];
@@ -808,7 +778,7 @@ void CP2130::writeSerialDesc(const QString &serial, int &errcnt, QString &errstr
     int strsize = serial.size();
     if (strsize > 30) {
         errcnt += 1;
-        errstr.append(QObject::tr("In writeSerialDesc(): serial descriptor string cannot be longer than 30 characters.\n"));  // Programmer error
+        errstr.append(QObject::tr("In writeSerialDesc(): serial descriptor string cannot be longer than 30 characters.\n"));  // Program logic error
     } else {
         unsigned char controlBufferOut[64];
         controlBufferOut[0] = 2 * strsize + 2;  // USB string descriptor length
