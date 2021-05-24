@@ -19,7 +19,6 @@
 
 
 // Includes
-#include <QObject>
 #include <QThread>
 #include "itusb1device.h"
 
