@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.0 for Debian Linux
+/* ITUSB1 Manager - Version 3.1 for Debian Linux
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -44,4 +44,4 @@ public:
     void update(float value);
 };
 
-#endif // METRICS_H
+#endif  // METRICS_H

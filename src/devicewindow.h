@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.0 for Debian Linux
+/* ITUSB1 Manager - Version 3.1 for Debian Linux
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -40,7 +40,7 @@ class DeviceWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit DeviceWindow(QWidget *parent = 0);
+    explicit DeviceWindow(QWidget *parent = nullptr);
     ~DeviceWindow();
 
     void openDevice(const QString &serialstr);
@@ -69,14 +69,15 @@ private slots:
 
 private:
     Ui::DeviceWindow *ui;
-    int erracc_ = 0;
+    DataLog log_;
     ITUSB1Device device_;
     Metrics metrics_;
     QElapsedTimer time_;  // QTime start() and elapsed() are now obsolete (version 3.1)
     QLabel *labelLog_, *labelMeas_, *labelTime_;
     QString filepath_, serialstr_;
     QTimer *timer_;
-    DataLog log_;
+    int erracc_ = 0;
+
     void clearMetrics();
     void deleteData();
     void disableView();
@@ -90,4 +91,4 @@ private:
     void updateView(bool up, bool ud, bool oc);
 };
 
-#endif // DEVICEWINDOW_H
+#endif  // DEVICEWINDOW_H

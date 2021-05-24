@@ -1,4 +1,4 @@
-/* ITUSB1 device class for Qt - Version 3.0
+/* ITUSB1 device class for Qt - Version 2.0.0
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -22,7 +22,8 @@
 #define ITUSB1DEVICE_H
 
 // Includes
-#include <QStringList>  // Also includes QString
+#include <QString>
+#include <QStringList>
 #include "cp2130.h"
 
 class ITUSB1Device
@@ -39,7 +40,7 @@ public:
     void detach(int &errcnt, QString &errstr) const;
     float getCurrent(int &errcnt, QString &errstr) const;
     QString getManufacturerDesc(int &errcnt, QString &errstr) const;
-    bool getOverCurrentStatus(int &errcnt, QString &errstr) const;
+    bool getOvercurrentStatus(int &errcnt, QString &errstr) const;
     QString getProductDesc(int &errcnt, QString &errstr) const;
     QString getSerialDesc(int &errcnt, QString &errstr) const;
     CP2130::USBConfig getUSBConfig(int &errcnt, QString &errstr) const;
@@ -48,6 +49,7 @@ public:
     bool isOpen() const;
     void reset(int &errcnt, QString &errstr) const;
     void setup(int &errcnt, QString &errstr) const;
+    void switchUSB(bool value, int &errcnt, QString &errstr) const;
     void switchUSBData(bool value, int &errcnt, QString &errstr) const;
     void switchUSBPower(bool value, int &errcnt, QString &errstr) const;
 
@@ -57,4 +59,4 @@ public:
     static QStringList listDevices(int &errcnt, QString &errstr);
 };
 
-#endif // ITUSB1DEVICE_H
+#endif  // ITUSB1DEVICE_H

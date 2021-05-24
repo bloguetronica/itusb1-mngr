@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.0 for Debian Linux
+/* ITUSB1 Manager - Version 3.1 for Debian Linux
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -268,7 +268,7 @@ void DeviceWindow::update()
     float current = device_.getCurrent(errcnt, errstr);
     bool up = device_.getUSBPowerStatus(errcnt, errstr);
     bool ud = device_.getUSBDataStatus(errcnt, errstr);
-    bool oc = device_.getOverCurrentStatus(errcnt, errstr);
+    bool oc = device_.getOvercurrentStatus(errcnt, errstr);
     if (opCheck(tr("update-op"), errcnt, errstr)) {  // Update values if no errors occur (implemented since version 2.0, and refactored in version 3.0)
         if (ui->actionLogData->isChecked()) {
             logDataPoint(current, up, ud, oc);
