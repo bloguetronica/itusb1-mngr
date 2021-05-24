@@ -1,4 +1,4 @@
-/* ITUSB1 device class for Qt - Version 3.0
+/* ITUSB1 device class for Qt - Version 2.0.0
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -19,347 +19,180 @@
 
 
 // Includes
-#include <QObject>  // Added translator support in version 3.0
+#include <QObject>
+#include <QThread>
 #include "itusb1device.h"
-extern "C" {
-#include "libusb-extra.h"
-}
 
 // Definitions
-const uint16_t VID = 0x10C4;  // USB vendor ID
-const uint16_t PID = 0x8C96;  // USB product ID
-const unsigned int TR_TIMEOUT = 100;  // Transfer timeout in milliseconds
+const quint16 VID = 0x10C4;  // USB vendor ID
+const quint16 PID = 0x8C96;  // USB product ID
+const size_t N_SAMPLES = 5;  // Number of samples per measurement, applicable to getCurrent()
 
-ITUSB1Device::ITUSB1Device() :
-    context_(nullptr),
-    handle_(nullptr),
-    deviceOpen_(false),
-    kernelAttached_(false)
+// Private convenience function that is used to get the raw current measurement reading from the LTC2312 ADC
+quint16 ITUSB1Device::getRawCurrent(int &errcnt, QString &errstr) const
 {
-}
-
-ITUSB1Device::~ITUSB1Device()
-{
-    close();  // The destructor is used to close the device, and this is essential so the device can be freed when the parent object is destroyed
-}
-
-// Configures the given SPI channel in respect to its chip select mode, clock frequency, polarity and phase
-void ITUSB1Device::configureSPIMode(uint8_t channel, const SPIMode &mode, int &errcnt, QString &errstr) const
-{
-    unsigned char control_buf_out[2] = {
-        channel,                                                                                       // Selected channel
-        static_cast<uint8_t>(mode.cpha << 5 | mode.cpol << 4 | mode.csmode << 3 | (0x07 & mode.cfrq))  // Control word (specified chip select mode, clock frequency, polarity and phase)
-    };
-    if (libusb_control_transfer(handle_, 0x40, 0x31, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), TR_TIMEOUT) != sizeof(control_buf_out)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0x40, 0x31).\n"));
-    }
-}
-
-// Disables the chip select corresponding to the target channel
-void ITUSB1Device::disableCS(uint8_t channel, int &errcnt, QString &errstr) const
-{
-    unsigned char control_buf_out[2] = {
-        channel,  // Selected channel
-        0x00      // Corresponding chip select disabled
-    };
-    if (libusb_control_transfer(handle_, 0x40, 0x25, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), TR_TIMEOUT) != sizeof(control_buf_out)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0x40, 0x25).\n"));
-    }
-}
-
-// Disables all SPI delays for a given channel
-void ITUSB1Device::disableSPIDelays(uint8_t channel, int &errcnt, QString &errstr) const
-{
-    unsigned char control_buf_out[8] = {
-        channel,     // Selected channel
-        0x00,        // All SPI delays disabled, no CS toggle
-        0x00, 0x00,  // Inter-byte,
-        0x00, 0x00,  // post-assert and
-        0x00, 0x00   // pre-deassert delays all set to 0us
-    };
-    if (libusb_control_transfer(handle_, 0x40, 0x33, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), TR_TIMEOUT) != sizeof(control_buf_out)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0x40, 0x33).\n"));
-    }
-}
-
-// Gets the raw value, corresponding to the measured current, from the LTC2312 ADC
-uint16_t ITUSB1Device::getCurrent(int &errcnt, QString &errstr) const
-{
-    unsigned char read_command_buf[8] = {
+    unsigned char readCommandBuffer[8] = {
         0x00, 0x00,             // Reserved
-        0x00,                   // Read command
+        CP2130::READ,           // Read command
         0x00,                   // Reserved
         0x02, 0x00, 0x00, 0x00  // Two bytes to read
     };
-    unsigned char read_input_buf[2];
-    int bytes_read, bytes_written;
-    if (libusb_bulk_transfer(handle_, 0x01, read_command_buf, sizeof(read_command_buf), &bytes_written, TR_TIMEOUT) != 0) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed bulk OUT transfer to endpoint 1 (address 0x01).\n"));
-    } else if (libusb_bulk_transfer(handle_, 0x82, read_input_buf, sizeof(read_input_buf), &bytes_read, TR_TIMEOUT) != 0) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed bulk IN transfer from endpoint 2 (address 0x82).\n"));
-    }
-    return static_cast<uint16_t>(read_input_buf[0] << 4 | read_input_buf[1] >> 4);
+    int bytesWritten;
+    cp2130_.bulkTransfer(0x01, readCommandBuffer, static_cast<int>(sizeof(readCommandBuffer)), &bytesWritten, errcnt, errstr);
+    unsigned char readInputBuffer[2];
+    int bytesRead;
+    cp2130_.bulkTransfer(0x82, readInputBuffer, static_cast<int>(sizeof(readInputBuffer)), &bytesRead, errcnt, errstr);
+    return static_cast<quint16>(readInputBuffer[0] << 4 | readInputBuffer[1] >> 4);
 }
 
-// Gets the current value of the GPIO.1 pin on the CP2130
-bool ITUSB1Device::getGPIO1(int &errcnt, QString &errstr) const
+ITUSB1Device::ITUSB1Device() :
+    cp2130_()
 {
-    unsigned char control_buf_in[2];
-    if (libusb_control_transfer(handle_, 0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
-    }
-    return ((0x10 & control_buf_in[1]) != 0x00);  // Returns one if bit 4 of byte 1, which corresponds to the GPIO.1 pin, is not set to zero
 }
 
-// Gets the current value of the GPIO.2 pin on the CP2130
-bool ITUSB1Device::getGPIO2(int &errcnt, QString &errstr) const
+// Attaches the DUT (device under test) to the HUT (host under test)
+void ITUSB1Device::attach(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (libusb_control_transfer(handle_, 0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
+    if (getUSBPowerStatus(errcnt, errstr) != getUSBDataStatus(errcnt, errstr)) {  // If true, this condition indicates an unusual state
+        switchUSB(false, errcnt, errstr);  // Switch VBUS off and disconnect the data lines
+        QThread::msleep(100);  // Wait 100ms to allow for device shutdown
     }
-    return ((0x20 & control_buf_in[1]) != 0x00);  // Returns one if bit 5 of byte 1, which corresponds to the GPIO.2 pin, is not set to zero
+    if (!getUSBPowerStatus(errcnt, errstr) && !getUSBDataStatus(errcnt, errstr)) {  // If both VBUS and data lines are disconnected
+        switchUSBPower(true, errcnt, errstr);  // Switch VBUS on
+        QThread::msleep(100);  // Wait 100ms in order to emulate a manual attachment of the device
+        switchUSBData(true, errcnt, errstr);  // Connect the data lines
+        QThread::msleep(100);  // Wait 100ms so that device enumeration process can, at least, start (this is not enough to guarantee enumeration, though)
+    }
 }
 
-// Gets the current value of the GPIO.3 pin on the CP2130
-bool ITUSB1Device::getGPIO3(int &errcnt, QString &errstr) const
+// Detaches the DUT (device under test) to the HUT (host under test)
+void ITUSB1Device::detach(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[2];
-    if (libusb_control_transfer(handle_, 0xC0, 0x20, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x20).\n"));
+    if (getUSBPowerStatus(errcnt, errstr) || getUSBDataStatus(errcnt, errstr)) {  // If either VBUS or the data lines are connected
+        switchUSBData(false, errcnt, errstr);  // Disconnect the data lines
+        QThread::msleep(100);  // Wait 100ms in order to emulate a manual detachment of the device
+        switchUSBPower(false, errcnt, errstr);  // Switch VBUS off
+        QThread::msleep(100);  // Wait 100ms to allow for device shutdown
     }
-    return ((0x40 & control_buf_in[1]) != 0x00);  // Returns one if bit 6 of byte 1, which corresponds to the GPIO.3 pin, is not set to zero
 }
 
-// Gets the major release version from the CP2130
-uint8_t ITUSB1Device::getMajorRelease(int &errcnt, QString &errstr) const
+// Gets the VBUS current
+// Important: SPI mode should be configured for channel 0, before using this function!
+float ITUSB1Device::getCurrent(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[9];
-    if (libusb_control_transfer(handle_, 0xC0, 0x60, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x60).\n"));
+    cp2130_.selectCS(0, errcnt, errstr);  // Enable the chip select corresponding to channel 0, and disable any others
+    getRawCurrent(errcnt, errstr);  // Discard this reading, as it will reflect a past measurement
+    size_t currentCodeSum = 0;
+    for (size_t i = 0; i < N_SAMPLES; ++i) {
+        currentCodeSum += getRawCurrent(errcnt, errstr);  // Read the raw value (from the LTC2312 on channel 0) and add it to the sum
     }
-    return control_buf_in[6];
+    QThread::usleep(100);  // Wait 100us, in order to prevent possible errors while disabling the chip select (workaround)
+    cp2130_.disableCS(0, errcnt, errstr);  // Disable the previously enabled chip select
+    return currentCodeSum / (4.0 * N_SAMPLES);  // Return the average current out of "N_SAMPLES" [5] for each measurement (currentCode / 4.0 for a single reading)
 }
 
-// Gets the manufacturer descriptor from the CP2130
-QString ITUSB1Device::getManufacturer(int &errcnt, QString &errstr) const
+// Gets the manufacturer descriptor from the device
+QString ITUSB1Device::getManufacturerDesc(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[64];
-    if (libusb_control_transfer(handle_, 0xC0, 0x62, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x62).\n"));
-    }
-    QString manufacturer;
-    int end = control_buf_in[0] > 62 ? 62 : control_buf_in[0];
-    for (int i = 2; i < end; i += 2) {  // Descriptor length is limited to 30 characters, or 60 bytes
-        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
-            manufacturer.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
-        }
-    }
-    return manufacturer;
+    return cp2130_.getManufacturerDesc(errcnt, errstr);
 }
 
-// Gets the maximum power descriptor from the CP2130
-uint8_t ITUSB1Device::getMaxPower(int &errcnt, QString &errstr) const
+// Gets OC flag
+bool ITUSB1Device::getOvercurrentStatus(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[9];
-    if (libusb_control_transfer(handle_, 0xC0, 0x60, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x60).\n"));
-    }
-    return control_buf_in[4];
+    return !cp2130_.getGPIO3(errcnt, errstr);  // Return the current state of the negated !UDOC signal
 }
 
-// Gets the minor release version from the CP2130
-uint8_t ITUSB1Device::getMinorRelease(int &errcnt, QString &errstr) const
+// Gets the product descriptor from the device
+QString ITUSB1Device::getProductDesc(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[9];
-    if (libusb_control_transfer(handle_, 0xC0, 0x60, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x60).\n"));
-    }
-    return control_buf_in[7];
+    return cp2130_.getProductDesc(errcnt, errstr);
 }
 
-// Gets the product descriptor from the CP2130
-QString ITUSB1Device::getProduct(int &errcnt, QString &errstr) const
+// Gets the serial descriptor from the device
+QString ITUSB1Device::getSerialDesc(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[64];
-    if (libusb_control_transfer(handle_, 0xC0, 0x66, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x66).\n"));
-    }
-    QString product;
-    int end = control_buf_in[0] > 62 ? 62 : control_buf_in[0];
-    for (int i = 2; i < end; i += 2) {  // Descriptor length is limited to 30 characters, or 60 bytes
-        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
-            product.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
-        }
-    }
-    return product;
+    return cp2130_.getSerialDesc(errcnt, errstr);
 }
 
-// Gets the serial descriptor from the CP2130
-QString ITUSB1Device::getSerial(int &errcnt, QString &errstr) const
+// Gets the USB configuration of the device
+CP2130::USBConfig ITUSB1Device::getUSBConfig(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_in[64];
-    if (libusb_control_transfer(handle_, 0xC0, 0x6A, 0x0000, 0x0000, control_buf_in, sizeof(control_buf_in), TR_TIMEOUT) != sizeof(control_buf_in)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0xC0, 0x6A).\n"));
-    }
-    QString serial;
-    for (int i = 2; i < control_buf_in[0]; i += 2) {
-        if (control_buf_in[i] != 0 || control_buf_in[i + 1] != 0) {  // Filter out null characters
-            serial.append(QChar(control_buf_in[i + 1] << 8 | control_buf_in[i]));  // UTF-16LE conversion as per the USB 2.0 specification
-        }
-    }
-    return serial;
+    return cp2130_.getUSBConfig(errcnt, errstr);
+}
+
+// Gets the status of the data lines
+bool ITUSB1Device::getUSBDataStatus(int &errcnt, QString &errstr) const
+{
+    return !cp2130_.getGPIO2(errcnt, errstr);  // Return the current state of the negated !UDEN signal
+}
+
+// Gets the status of VBUS
+bool ITUSB1Device::getUSBPowerStatus(int &errcnt, QString &errstr) const
+{
+    return !cp2130_.getGPIO1(errcnt, errstr);  // Return the current state of the negated !UPEN signal
 }
 
 // Checks if the device is open
 bool ITUSB1Device::isOpen() const
 {
-    return deviceOpen_;  // Returns true if the device is open, or false otherwise
+    return cp2130_.isOpen();
 }
 
-void ITUSB1Device::reset(int &errcnt, QString &errstr) const  // Issues a reset to the CP2130, which in effect resets the entire device
+// Issues a reset to the CP2130, which in effect resets the entire device
+void ITUSB1Device::reset(int &errcnt, QString &errstr) const
 {
-    if (libusb_control_transfer(handle_, 0x40, 0x10, 0x0000, 0x0000, nullptr, 0, TR_TIMEOUT) != 0) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0x40, 0x10).\n"));
-    }
+    cp2130_.reset(errcnt, errstr);
 }
 
-// Enables the chip select of the target channel, disabling any others
-void ITUSB1Device::selectCS(uint8_t channel, int &errcnt, QString &errstr) const
+// Sets up and prepares the device
+void ITUSB1Device::setup(int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[2] = {
-        channel,  // Selected channel
-        0x02      // Only the corresponding chip select is enabled, all the others are disabled
-    };
-    if (libusb_control_transfer(handle_, 0x40, 0x25, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), TR_TIMEOUT) != sizeof(control_buf_out)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0x40, 0x25).\n"));
-    }
+    CP2130::SPIMode mode;
+    mode.csmode = CP2130::CSMODEPP;  // Chip select pin mode regarding channel 0 is push-pull
+    mode.cfrq = CP2130::CFRQ1500K;  // SPI clock frequency set to 1.5MHz
+    mode.cpol = CP2130::CPOL0;  // SPI clock polarity is active high (CPOL = 0)
+    mode.cpha = CP2130::CPHA0;  // SPI data is valid on each rising edge (CPHA = 0)
+    cp2130_.configureSPIMode(0, mode, errcnt, errstr);  // Configure SPI mode for channel 0, using the above settings
+    cp2130_.disableSPIDelays(0, errcnt, errstr);  // Disable all SPI delays for channel 0
+    cp2130_.selectCS(0, errcnt, errstr);  // Enable the chip select corresponding to channel 0, and disable any others
+    getRawCurrent(errcnt, errstr);  // Discard this first reading - This also wakes up the LTC2312, if in nap or sleep mode!
+    QThread::usleep(1100);  // Wait 1.1ms to ensure that the LTC2312 is awake, and also to prevent possible errors while disabling the chip select (workaround)
+    cp2130_.disableCS(0, errcnt, errstr);  // Disable the previously enabled chip select
 }
 
-// Sets the GPIO.1 pin on the CP2130 to a given value
-void ITUSB1Device::setGPIO1(bool value, int &errcnt, QString &errstr) const
+// Switches both VBUS and the data lines on or off
+void ITUSB1Device::switchUSB(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
-        0x00, static_cast<uint8_t>(value << 4),  // Set the value of GPIO.1 to the intended value
-        0x00, 0x10                               // Set the mask so that only GPIO.1 is changed
-    };
-    if (libusb_control_transfer(handle_, 0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), TR_TIMEOUT) != sizeof(control_buf_out)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
-    }
+    cp2130_.setGPIOs(CP2130::BMGPIOS * !value, CP2130::BMGPIO1 | CP2130::BMGPIO2 , errcnt, errstr);  // This operates GPIO.1 and GPIO.2 simultaneously
 }
 
-// Sets the GPIO.2 pin on the CP2130 to a given value
-void ITUSB1Device::setGPIO2(bool value, int &errcnt, QString &errstr) const
+// Switches the USB data lines on or off
+void ITUSB1Device::switchUSBData(bool value, int &errcnt, QString &errstr) const
 {
-    unsigned char control_buf_out[4] = {
-        0x00, static_cast<uint8_t>(value << 5),  // Set the value of GPIO.2 to the intended value
-        0x00, 0x20                               // Set the mask so that only GPIO.2 is changed
-    };
-    if (libusb_control_transfer(handle_, 0x40, 0x21, 0x0000, 0x0000, control_buf_out, sizeof(control_buf_out), TR_TIMEOUT) != sizeof(control_buf_out)) {
-        errcnt += 1;
-        errstr.append(QObject::tr("Failed control transfer (0x40, 0x21).\n"));
-    }
+    cp2130_.setGPIO2(!value, errcnt, errstr);  // GPIO.2 corresponds to the !UDEN signal
+}
+
+// Switches VBUS on or off
+void ITUSB1Device::switchUSBPower(bool value, int &errcnt, QString &errstr) const
+{
+    cp2130_.setGPIO1(!value, errcnt, errstr);  // GPIO.1 corresponds to the !UPEN signal
 }
 
 // Closes the device safely, if open
 void ITUSB1Device::close()
 {
-    if (deviceOpen_) {  // This condition avoids a segmentation fault if the calling algorithm tries, for some reason, to close the same device twice (e.g., if the device is already closed when the destructor is called)
-        libusb_release_interface(handle_, 0);  // Release the interface
-        if (kernelAttached_) {  // If a kernel driver was attached to the interface before
-            libusb_attach_kernel_driver(handle_, 0);  // Reattach the kernel driver
-            // No need to flag the kernel driver as detached here (since version 3.0)
-        }
-        libusb_close(handle_);  // Close the device
-        libusb_exit(context_);  // Deinitialize libusb
-        deviceOpen_ = false;  // Flag the device as closed
-    }
+    cp2130_.close();
 }
 
 // Opens the device having the given serial number, and assigns its handle
 int ITUSB1Device::open(const QString &serial)
 {
-    int retval = 0;
-    if (!deviceOpen_) {  // Just in case the calling algorithm tries to open a device that was already sucessfully open, or tries to open different devices concurrently, all while using (or referencing to) the same object
-        if (libusb_init(&context_) != 0) {  // Initialize libusb. In case of failure
-            retval = 1;
-        } else {  // If libusb is initialized
-            handle_ = libusb_open_device_with_vid_pid_serial(context_, VID, PID, reinterpret_cast<unsigned char *>(serial.toLocal8Bit().data()));
-            if (handle_ == nullptr) {  // If the previous operation fails to get a device handle
-                libusb_exit(context_);  // Deinitialize libusb
-                retval = 2;
-            } else {  // If the device is successfully opened and a handle obtained
-                if (libusb_kernel_driver_active(handle_, 0) != 0) {  // If a kernel driver is active on the interface
-                    libusb_detach_kernel_driver(handle_, 0);  // Detach the kernel driver
-                    kernelAttached_ = true;  // Flag that the kernel driver was attached
-                } else {
-                    kernelAttached_ = false;  // The kernel driver was not attached
-                }
-                if (libusb_claim_interface(handle_, 0) != 0) {  // Claim the interface. In case of failure
-                    if (kernelAttached_) {  // If a kernel driver was attached to the interface before
-                        libusb_attach_kernel_driver(handle_, 0);  // Reattach the kernel driver
-                        // No need to flag the kernel driver as detached here (since version 3.0)
-                    }
-                    libusb_close(handle_);  // Close the device
-                    libusb_exit(context_);  // Deinitialize libusb
-                    retval = 3;
-                } else {
-                    deviceOpen_ = true;  // Flag the device as open
-                }
-            }
-        }
-    }
-    return retval;
+    return cp2130_.open(VID, PID, serial);
 }
 
-// Helper function to list devices (static member since version 3.0)
+// Helper function to list devices
 QStringList ITUSB1Device::listDevices(int &errcnt, QString &errstr)
 {
-    QStringList devices;
-    libusb_context *context;
-    if (libusb_init(&context) != 0) {  // Initialize libusb. In case of failure
-        errcnt += 1;
-        errstr.append(QObject::tr("Could not initialize libusb.\n"));
-    } else {  // If libusb is initialized
-        libusb_device **devs;
-        ssize_t devlist = libusb_get_device_list(context, &devs);  // Get a device list
-        if (devlist < 0) {  // If the previous operation fails to get a device list
-            errcnt += 1;
-            errstr.append(QObject::tr("Failed to retrieve a list of devices.\n"));
-        } else {
-            for (ssize_t i = 0; i < devlist; ++i) {  // Run through all listed devices
-                struct libusb_device_descriptor desc;
-                if (libusb_get_device_descriptor(devs[i], &desc) == 0 && desc.idVendor == VID && desc.idProduct == PID) {  // If the device descriptor is retrieved, and both VID and PID correspond to the ITUSB1 Power Supply
-                    libusb_device_handle *handle;
-                    if (libusb_open(devs[i], &handle) == 0) {  // Open the listed device. If successfull
-                        unsigned char str_desc[256];
-                        libusb_get_string_descriptor_ascii(handle, desc.iSerialNumber, str_desc, sizeof(str_desc));  // Get the serial number string in ASCII format
-                        QString serial;
-                        devices.append(serial.fromLocal8Bit(reinterpret_cast<char *>(str_desc)));  // Append the serial number string to the list
-                        libusb_close(handle);  // Close the device
-                    }
-                }
-            }
-            libusb_free_device_list(devs, 1);  // Free device list
-        }
-        libusb_exit(context);  // Deinitialize libusb
-    }
-    return devices;
+    return CP2130::listDevices(VID, PID, errcnt, errstr);
 }

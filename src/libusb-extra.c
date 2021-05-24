@@ -1,5 +1,5 @@
-/* Extra functions for libusb - Version 1.2
-   Copyright (c) 2018-2020 Samuel Lourenço
+/* Extra functions for libusb - Version 1.0.3
+   Copyright (c) 2018-2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
    under the terms of the GNU Lesser General Public License as published by
@@ -22,7 +22,8 @@
 #include <string.h>
 #include "libusb-extra.h"
 
-libusb_device_handle *libusb_open_device_with_vid_pid_serial(libusb_context *context, uint16_t vid, uint16_t pid, unsigned char *serial)  // Opens the device with matching VID, PID and serial number
+// Opens the device with matching VID, PID and serial number
+libusb_device_handle *libusb_open_device_with_vid_pid_serial(libusb_context *context, uint16_t vid, uint16_t pid, unsigned char *serial)
 {
     libusb_device **devs;
     libusb_device_handle *devhandle = NULL;
@@ -33,7 +34,7 @@ libusb_device_handle *libusb_open_device_with_vid_pid_serial(libusb_context *con
             struct libusb_device_descriptor desc;
             if (libusb_get_device_descriptor(dev, &desc) == 0 && desc.idVendor == vid && desc.idProduct == pid && libusb_open(dev, &devhandle) == 0) {  // If the device descriptor is retrieved, both PID and VID match, and if the device is successfully opened
                 unsigned char str_desc[256];
-                libusb_get_string_descriptor_ascii(devhandle, desc.iSerialNumber, str_desc, sizeof(str_desc));  // Get the serial number string in ASCII format
+                libusb_get_string_descriptor_ascii(devhandle, desc.iSerialNumber, str_desc, (int)sizeof(str_desc));  // Get the serial number string in ASCII format
                 if (strcmp((char *)str_desc, (char *)serial) == 0) {  // If the serial number match
                     break;
                 } else {

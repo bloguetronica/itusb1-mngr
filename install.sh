@@ -12,6 +12,8 @@ mkdir -p /usr/local/src/itusb1-mngr/translations
 cp -f src/aboutdialog.cpp /usr/local/src/itusb1-mngr/.
 cp -f src/aboutdialog.h /usr/local/src/itusb1-mngr/.
 cp -f src/aboutdialog.ui /usr/local/src/itusb1-mngr/.
+cp -f src/cp2130.cpp /usr/local/src/itusb1-mngr/.
+cp -f src/cp2130.h /usr/local/src/itusb1-mngr/.
 cp -f src/datalog.cpp /usr/local/src/itusb1-mngr/.
 cp -f src/datalog.h /usr/local/src/itusb1-mngr/.
 cp -f src/datapoint.h /usr/local/src/itusb1-mngr/.

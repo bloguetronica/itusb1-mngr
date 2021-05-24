@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.0 for Debian Linux
+/* ITUSB1 Manager - Version 3.1 for Debian Linux
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -112,11 +112,12 @@ void DeviceWindow::on_actionInformation_triggered()
     int errcnt = 0;
     QString errstr;
     InformationDialog info;
-    info.setManufacturerLabelText(device_.getManufacturer(errcnt, errstr));
-    info.setProductLabelText(device_.getProduct(errcnt, errstr));
-    info.setSerialLabelText(device_.getSerial(errcnt, errstr));  // It is important to read the serial number from the OTP ROM, instead of just passing the value of serialstr_
-    info.setRevisionLabelText(device_.getMajorRelease(errcnt, errstr), device_.getMinorRelease(errcnt, errstr));
-    info.setMaxPowerLabelText(device_.getMaxPower(errcnt, errstr));
+    info.setManufacturerLabelText(device_.getManufacturerDesc(errcnt, errstr));
+    info.setProductLabelText(device_.getProductDesc(errcnt, errstr));
+    info.setSerialLabelText(device_.getSerialDesc(errcnt, errstr));  // It is important to read the serial number from the OTP ROM, instead of just passing the value of serialstr_
+    CP2130::USBConfig config = device_.getUSBConfig(errcnt, errstr);
+    info.setRevisionLabelText(config.majrel, config.minrel);
+    info.setMaxPowerLabelText(config.maxpow);
     if (opCheck(tr("device-information-retrieval-op"), errcnt, errstr)) {  // If error check passes (the string "device-information-retrieval-op" should be translated to "Device information retrieval")
         info.exec();
     }
@@ -181,7 +182,7 @@ void DeviceWindow::on_actionResetTime_triggered()
         int qmret = QMessageBox::question(this, tr("Reset Time Count?"), tr("This action, besides resetting the elapsed time count, will also delete any previously acquired data points.\n\nDo you wish to proceed?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
         if (qmret == QMessageBox::Yes) {  // If user clicked "Yes"
             deleteData();  // Delete acquired data points
-            if (device_.isOpen()) {  // This condition is essential so the timer won't be restarted if, in the meantime, the device gets disconnected - In effect this prevents a segmentation fault!
+            if (device_.isOpen()) {  // This condition is essential so the timer won't be restarted if, in the meantime, the device gets disconnected - In effect this prevents further errors!
                 resetTimeCount();  // Reset time count - This will restart the timer too!
             }
         }
@@ -198,7 +199,7 @@ void DeviceWindow::on_checkBoxData_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    device_.setGPIO2(!ui->checkBoxData->isChecked(), errcnt, errstr);
+    device_.switchUSBData(ui->checkBoxData->isChecked(), errcnt, errstr);
     opCheck(tr("data-switch-op"), errcnt, errstr);  // The string "data-switch-op" should be translated to "Data switch"
 }
 
@@ -206,7 +207,7 @@ void DeviceWindow::on_checkBoxPower_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    device_.setGPIO1(!ui->checkBoxPower->isChecked(), errcnt, errstr);
+    device_.switchUSBPower(ui->checkBoxPower->isChecked(), errcnt, errstr);
     opCheck(tr("power-switch-op"), errcnt, errstr);  // The string "power-switch-op" should be translated to "Power switch"
 }
 
@@ -214,17 +215,7 @@ void DeviceWindow::on_pushButtonAttach_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    if (device_.getGPIO1(errcnt, errstr) != device_.getGPIO2(errcnt, errstr)) {  // If GPIO.1 and GPIO.2 pins do not match in value, indicating an unusual state
-        device_.setGPIO1(true, errcnt, errstr);  // Set GPIO.1 to a logical high to switch off VBUS first
-        device_.setGPIO2(true, errcnt, errstr);  // Set GPIO.2 to a logical high to disconnect the data lines
-        QThread::msleep(100);  // Wait 100ms to allow for device shutdown
-    }
-    if (device_.getGPIO1(errcnt, errstr) && device_.getGPIO2(errcnt, errstr)) {  // If GPIO.1 and GPIO.2 are both set to a logical high
-        device_.setGPIO1(false, errcnt, errstr);  // Set GPIO.1 to a logical low to switch VBUS on
-        QThread::msleep(100);  // Wait 100ms in order to emulate a manual attachment of the device
-        device_.setGPIO2(false, errcnt, errstr);  // Set GPIO.2 to a logical low to connect the data lines
-        QThread::msleep(100);  // Wait 100ms so that device enumeration process can, at least, start (this is not enough to guarantee enumeration, though)
-    }
+    device_.attach(errcnt, errstr);
     if (opCheck(tr("attach-op"), errcnt, errstr)) {  // If error check passes  (the string "attach-op" should be translated to "Attach")
         // Added in version 3.0, for improved responsiveness
         ui->checkBoxPower->setChecked(true);
@@ -243,12 +234,7 @@ void DeviceWindow::on_pushButtonDetach_clicked()
 {
     int errcnt = 0;
     QString errstr;
-    if (!device_.getGPIO1(errcnt, errstr) || !device_.getGPIO2(errcnt, errstr)) {  // If GPIO.1 or GPIO.2, or both, are set to a logical low
-        device_.setGPIO2(true, errcnt, errstr);  // Set GPIO.2 to a logical high so that the data lines are disconnected
-        QThread::msleep(100);  // Wait 100ms in order to emulate a manual detachment of the device
-        device_.setGPIO1(true, errcnt, errstr);  // Set GPIO.1 to a logical high to switch VBUS off
-        QThread::msleep(100);  // Wait 100ms to allow for device shutdown
-    }
+    device_.detach(errcnt, errstr);
     if (opCheck(tr("detach-op"), errcnt, errstr)) {  // If error check passes (the string "detach-op" should be translated to "Detach")
         // Added in version 3.0, for improved responsiveness
         ui->checkBoxPower->setChecked(false);
@@ -264,7 +250,7 @@ void DeviceWindow::on_pushButtonReset_clicked()
     } else {
         int qmret = QMessageBox::question(this, tr("Reset Device?"), tr("This action, besides resetting the device, will also delete any previously acquired data points.\n\nDo you wish to proceed?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);  // Confirmation added in version 3.0
         if (qmret == QMessageBox::Yes) {  // If user clicked "Yes"
-            if (device_.isOpen()) {  // This condition is required to prevent a segmentation fault if, in the meantime, the device gets disconnected
+            if (device_.isOpen()) {  // This condition is required to prevent multiple errors if, in the meantime, the device gets disconnected
                 resetDevice();
             } else {
                 deleteData();  // Delete all data points, as an alternative to resetDevice()
@@ -279,19 +265,11 @@ void DeviceWindow::update()
     // No verification is done here since version 2.0
     int errcnt = 0;
     QString errstr;
-    bool up = !device_.getGPIO1(errcnt, errstr);  // Get the current value of the GPIO.1 pin, which corresponds to the !UPEN signal, and negate it
-    bool ud = !device_.getGPIO2(errcnt, errstr);  // Get the current value of the GPIO.2 pin, which corresponds to the !UDEN signal, and negate it
-    bool oc = !device_.getGPIO3(errcnt, errstr);  // Get the current value of the GPIO.3 pin, which corresponds to the !UPOC signal, and negate it
-    device_.selectCS(0, errcnt, errstr);  // Enable the chip select corresponding to channel 0, and disable any others
-    device_.getCurrent(errcnt, errstr);  // Discard this reading, as it will reflect a past measurement
-    uint16_t curr_code_sum = 0;
-    for (int i = 0; i < 5; ++i) {
-        curr_code_sum += device_.getCurrent(errcnt, errstr);  // Read the raw value (from the LTC2312 on channel 0) and add it to the sum
-    }
-    QThread::usleep(100);  // Wait 100us, in order to prevent possible errors while disabling the chip select (workaround)
-    device_.disableCS(0, errcnt, errstr);  // Disable the previously enabled chip select
+    float current = device_.getCurrent(errcnt, errstr);
+    bool up = device_.getUSBPowerStatus(errcnt, errstr);
+    bool ud = device_.getUSBDataStatus(errcnt, errstr);
+    bool oc = device_.getOvercurrentStatus(errcnt, errstr);
     if (opCheck(tr("update-op"), errcnt, errstr)) {  // Update values if no errors occur (implemented since version 2.0, and refactored in version 3.0)
-        float current = curr_code_sum / 20.0;  // Calculate the average current out of five readings for each point (current = curr_code / 4.0 for a single reading)
         if (ui->actionLogData->isChecked()) {
             logDataPoint(current, up, ud, oc);
         }
@@ -348,7 +326,7 @@ bool DeviceWindow::opCheck(const QString &op, int errcnt, QString errstr)
         QMessageBox::critical(this, tr("Error"), tr("%1 operation returned the following error(s):\n– %2", "", errcnt).arg(op, errstr.replace("\n", "\n– ")));
         erracc_ += errcnt;
         if (erracc_ > 10) {  // If the session accumulated more than 10 errors (this is validateErrors(), in essence)
-            timer_->stop();  // This prevents a segmentation fault
+            timer_->stop();  // This prevents further errors
             QMessageBox::critical(this, tr("Error"), tr("Detected too many errors. Device may not be properly connected.\n\nThe device window will be disabled."));
             disableView();  // Disable device window
             device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful
@@ -363,7 +341,7 @@ bool DeviceWindow::opCheck(const QString &op, int errcnt, QString errstr)
 // Resets the device (added in version 3.0, as a refactor)
 void DeviceWindow::resetDevice()
 {
-    timer_->stop();  // Stop the update timer momentarily, in order to avoid a segmentation fault if the device gets disconnected during a reset, or other unexpected behavior (bug fix added in version 2.0)
+    timer_->stop();  // Stop the update timer momentarily, in order to avoid recurrent errors if the device gets disconnected during a reset, or other unexpected behavior (bug fix added in version 2.0)
     clearMetrics();
     deleteData();  // As of version 3.0, all data points are deleted before a reset is issued to the device, so that the window may close if there is a problem - Effectively, this will bypass the inner workings of closeEvent()!
     ui->labelOCFault->clear();  // Clear "OC fault!" warning, if applicable
@@ -443,17 +421,7 @@ void DeviceWindow::setupDevice()
 {
     int errcnt = 0;
     QString errstr;
-    ITUSB1Device::SPIMode mode;
-    mode.csmode = ITUSB1Device::CSMODEPP;  // Chip select pin mode regarding channel 0 is push-pull
-    mode.cfrq = ITUSB1Device::CFRQ1500K;  // SPI clock frequency set to 1.5MHz
-    mode.cpol = ITUSB1Device::CPOL0;  // SPI clock polarity is active high (CPOL = 0)
-    mode.cpha = ITUSB1Device::CPHA0;  // SPI data is valid on each rising edge (CPHA = 0)
-    device_.configureSPIMode(0, mode, errcnt, errstr);  // Configure SPI mode for channel 0, using the above settings
-    device_.disableSPIDelays(0, errcnt, errstr);  // Disable all SPI delays for channel 0
-    device_.selectCS(0, errcnt, errstr);  // Enable the chip select corresponding to channel 0, and disable any others
-    device_.getCurrent(errcnt, errstr);  // Discard this first reading - This also wakes up the LTC2312, if in nap or sleep mode!
-    QThread::usleep(1100);  // Wait 1.1ms to ensure that the LTC2312 is awake, and also to prevent possible errors while disabling the chip select (workaround)
-    device_.disableCS(0, errcnt, errstr);  // Disable the previously enabled chip select
+    device_.setup(errcnt, errstr);
     if (errcnt > 0) {
         errstr.chop(1);  // Remove the last character, which is always a newline
         QMessageBox::critical(this, tr("Error"), tr("Setup operation returned the following error(s):\n– %1\n\nPlease try accessing the device again.", "", errcnt).arg(errstr.replace("\n", "\n– ")));

@@ -3,6 +3,8 @@ A list of relevant files follows:
 – aboutdialog.cpp;
 – aboutdialog.h;
 – aboutdialog.ui;
+– cp2130.cpp;
+– cp2130.h;
 – datalog.cpp;
 – datalog.h;
 – datapoint.h;
