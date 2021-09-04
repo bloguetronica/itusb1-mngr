@@ -1,4 +1,4 @@
-/* CP2130 class for Qt - Version 1.0.0
+/* CP2130 class for Qt - Version 2.0.2
    Copyright (c) 2021 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
 // Includes
 #include <QString>
 #include <QStringList>
+#include <QVector>
 #include <libusb-1.0/libusb.h>
 
 class CP2130
@@ -31,16 +32,98 @@ class CP2130
 private:
     libusb_context *context_;
     libusb_device_handle *handle_;
-    bool kernelAttached_;
+    bool disconnected_, kernelAttached_;
 
 public:
     // Class definitions
     static const quint16 VID = 0x10C4;     // Default USB vendor ID
     static const quint16 PID = 0x87A0;     // Default USB product ID
-    static const quint8 READ = 0x00;       // Read command, to be used with bulkTransfer()
-    static const quint8 WRITE = 0x01;      // Write command, to be used with bulkTransfer()
-    static const quint8 WRITEREAD = 0x02;  // WriteRead command, to be used with bulkTransfer()
-    static const quint8 READWRTR = 0x04;   // ReadWithRTR command, to be used with bulkTransfer()
+    static const int SUCCESS = 0;          // Returned by open() if successful
+    static const int ERROR_INIT = 1;       // Returned by open() in case of a libusb initialization failure
+    static const int ERROR_NOT_FOUND = 2;  // Returned by open() if the device was not found
+    static const int ERROR_BUSY = 3;       // Returned by open() if the device is already in use
+
+    // OTP ROM specific definitions
+    static const size_t PROM_BLOCKS = 8;                            // Number of blocks of the OTP ROM
+    static const size_t PROM_BLOCK_SIZE = 64;                       // Size of each block
+    static const size_t PROM_SIZE = PROM_BLOCKS * PROM_BLOCK_SIZE;  // Total size of the OTP ROM
+    static const quint16 PROM_WRITE_KEY = 0xA5F1;                   // OTP ROM write key
+    static const size_t PROMIDX_VID = 0;                            // 'VID' field index
+    static const size_t PROMSZE_VID = 2;                            // 'VID' field size
+    static const size_t PROMIDX_PID = 2;                            // 'PID' field index
+    static const size_t PROMSZE_PID = 2;                            // 'PID' field size
+    static const size_t PROMIDX_MAX_POWER = 4;                      // 'Max Power' field index
+    static const size_t PROMSZE_MAX_POWER = 1;                      // 'Max Power' field size
+    static const size_t PROMIDX_POWER_MODE = 5;                     // 'Power Mode' field index
+    static const size_t PROMSZE_POWER_MODE = 1;                     // 'Power Mode' field size
+    static const size_t PROMIDX_RELEASE_VERSION = 6;                // 'Release Version' field index
+    static const size_t PROMSZE_RELEASE_VERSION = 2;                // 'Release Version' field size
+    static const size_t PROMIDX_TRANSFER_PRIORITY = 8;              // 'Transfer Priority' field index
+    static const size_t PROMSZE_TRANSFER_PRIORITY = 1;              // 'Transfer Priority' field size
+    static const size_t PROMIDX_MANUFACTURING_STRING_1 = 9;         // 'Manufacturing String 1' field index
+    static const size_t PROMSZE_MANUFACTURING_STRING_1 = 63;        // 'Manufacturing String 1' field size
+    static const size_t PROMIDX_MANUFACTURING_STRING_2 = 72;        // 'Manufacturing String 2' field index
+    static const size_t PROMSZE_MANUFACTURING_STRING_2 = 63;        // 'Manufacturing String 2' field size
+    static const size_t PROMIDX_PRODUCT_STRING_1 = 135;             // 'Product String 1' field index
+    static const size_t PROMSZE_PRODUCT_STRING_1 = 63;              // 'Product String 1' field size
+    static const size_t PROMIDX_PRODUCT_STRING_2 = 198;             // 'Product String 2' field index
+    static const size_t PROMSZE_PRODUCT_STRING_2 = 63;              // 'Product String 2' field size
+    static const size_t PROMIDX_SERIAL_STRING = 261;                // 'Serial String' field index
+    static const size_t PROMSZE_SERIAL_STRING = 62;                 // 'Serial String' field size
+    static const size_t PROMIDX_PIN_CONFIG = 324;                   // 'Pin Config' field index
+    static const size_t PROMSZE_PIN_CONFIG = 20;                    // 'Pin Config' field size
+    static const size_t PROMIDX_CUSTOMIZED_FIELDS = 344;            // Customized fields index
+    static const size_t PROMSZE_CUSTOMIZED_FIELDS = 2;              // Customized fields size
+    static const size_t PROMIDX_LOCK_BYTE = 346;                    // 'Lock Byte' field index
+    static const size_t PROMSZE_LOCK_BYTE = 2;                      // 'Lock Byte' field size
+
+    // The following values are applicable to bulkTransfer()
+    static const quint8 READ = 0x00;         // Read command
+    static const quint8 WRITE = 0x01;        // Write command
+    static const quint8 WRITEREAD = 0x02;    // WriteRead command
+    static const quint8 READWITHRTR = 0x04;  // ReadWithRTR command
+
+    // The following values are applicable to controlTransfer()
+    static const quint8 GET = 0xC0;                         // Device-to-Host vendor request
+    static const quint8 SET = 0x40;                         // Host-to-Device vendor request
+    static const quint8 RESET_DEVICE = 0x10;                // Reset_Device command
+    static const quint8 GET_READONLY_VERSION = 0x11;        // Get_ReadOnly_Version command
+    static const quint8 GET_GPIO_VALUES = 0x20;             // Get_GPIO_Values command
+    static const quint8 SET_GPIO_VALUES = 0x21;             // Set_GPIO_Values command
+    static const quint8 GET_GPIO_MODE_AND_LEVEL = 0x22;     // Get_GPIO_Mode_And_Level command
+    static const quint8 SET_GPIO_MODE_AND_LEVEL = 0x23;     // Set_GPIO_Mode_And_Level command
+    static const quint8 GET_GPIO_CHIP_SELECT = 0x24;        // Get_GPIO_Chip_Select command
+    static const quint8 SET_GPIO_CHIP_SELECT = 0x25;        // Set_GPIO_Chip_Select command
+    static const quint8 GET_SPI_WORD = 0x30;                // Get_SPI_Word command
+    static const quint8 SET_SPI_WORD = 0x31;                // Set_SPI_Word command
+    static const quint8 GET_SPI_DELAY = 0x32;               // Get_SPI_Delay command
+    static const quint8 SET_SPI_DELAY = 0x33;               // Set_SPI_Delay command
+    static const quint8 GET_FULL_THRESHOLD = 0x34;          // Get_Full_Threshold command
+    static const quint8 SET_FULL_THRESHOLD = 0x35;          // Set_Full_Threshold command
+    static const quint8 GET_RTR_STATE = 0x36;               // Get_RTR_State command
+    static const quint8 SET_RTR_STOP = 0x37;                // Set_RTR_Stop command
+    static const quint8 GET_EVENT_COUNTER = 0x44;           // Get_Event_Counter command
+    static const quint8 SET_EVENT_COUNTER = 0x45;           // Set_Event_Counter command
+    static const quint8 GET_CLOCK_DIVIDER = 0x46;           // Get_Clock_Divider command
+    static const quint8 SET_CLOCK_DIVIDER = 0x47;           // Set_Clock_Divider command
+    static const quint8 GET_USB_CONFIG = 0x60;              // Get_USB_Config command
+    static const quint8 SET_USB_CONFIG = 0x61;              // Set_USB_Config command
+    static const quint8 GET_MANUFACTURING_STRING_1 = 0x62;  // Get_Manufacturing_String_1 command
+    static const quint8 SET_MANUFACTURING_STRING_1 = 0x63;  // Set_Manufacturing_String_1 command
+    static const quint8 GET_MANUFACTURING_STRING_2 = 0x64;  // Get_Manufacturing_String_2 command
+    static const quint8 SET_MANUFACTURING_STRING_2 = 0x65;  // Set_Manufacturing_String_2 command
+    static const quint8 GET_PRODUCT_STRING_1 = 0x66;        // Get_Product_String_1 command
+    static const quint8 SET_PRODUCT_STRING_1 = 0x67;        // Set_Product_String_1 command
+    static const quint8 GET_PRODUCT_STRING_2 = 0x68;        // Get_Product_String_2 command
+    static const quint8 SET_PRODUCT_STRING_2 = 0x69;        // Set_Product_String_2 command
+    static const quint8 GET_SERIAL_STRING = 0x6A;           // Get_Serial_String command
+    static const quint8 SET_SERIAL_STRING = 0x6B;           // Set_Serial_String command
+    static const quint8 GET_PIN_CONFIG = 0x6C;              // Get_Pin_Config command
+    static const quint8 SET_PIN_CONFIG = 0x6D;              // Set_Pin_Config command
+    static const quint8 GET_LOCK_BYTE = 0x6E;               // Get_Lock_Byte command
+    static const quint8 SET_LOCK_BYTE = 0x6F;               // Set_Lock_Byte command
+    static const quint8 GET_PROM_CONFIG = 0x70;             // Get_PROM_Config command
+    static const quint8 SET_PROM_CONFIG = 0x71;             // Set_PROM_Config command
 
     // The following masks are applicable to the value returned by getLockWord()
     static const quint16 LWVID = 0x0001;      // Mask for the vendor ID lock bit
@@ -73,9 +156,9 @@ public:
     static const bool CPHA1 = true;        // Boolean corresponding to CPHA = 1
 
     // The following values are applicable to PinConfig/getPinConfig()/writePinConfig()
-    static const quint8 PCIN = 0x00;         // GPIO as input
-    static const quint8 PCOUTOD = 0x01;      // GPIO as open-drain output
-    static const quint8 PCOUTPP = 0x02;      // GPIO as push-pull output
+    static const quint8 PCIN = 0x00;         // GPIO as input - Also applicable to configureGPIO()
+    static const quint8 PCOUTOD = 0x01;      // GPIO as open-drain output - Also applicable to configureGPIO()
+    static const quint8 PCOUTPP = 0x02;      // GPIO as push-pull output - Also applicable to configureGPIO()
     static const quint8 PCCS = 0x03;         // GPIO as chip select
     static const quint8 PCNRTR = 0x04;       // GPIO as !RTR input, only applicable to GPIO.3
     static const quint8 PCRTR = 0x05;        // GPIO as RTR input, only applicable to GPIO.3
@@ -143,6 +226,15 @@ public:
         bool operator !=(const PinConfig &other) const;
     };
 
+    struct PROMConfig {
+        quint8 blocks[PROM_BLOCKS][PROM_BLOCK_SIZE];  // OTP ROM blocks
+
+        bool operator ==(const PROMConfig &other) const;
+        bool operator !=(const PROMConfig &other) const;
+        quint8 &operator [](size_t index);
+        const quint8 &operator [](size_t index) const;
+    };
+
     struct SiliconVersion {
         quint8 maj;  // Major read-only version
         quint8 min;  // Minor read-only version
@@ -190,70 +282,81 @@ public:
     CP2130();
     ~CP2130();
 
-    void bulkTransfer(quint8 endpoint, unsigned char *data, int length, int *transferred, int &errcnt, QString &errstr) const;
-    void configureSPIDelays(quint8 channel, const SPIDelays &delays, int &errcnt, QString &errstr) const;
-    void configureSPIMode(quint8 channel, const SPIMode &mode, int &errcnt, QString &errstr) const;
-    void controlTransfer(quint8 bmRequestType, quint8 bRequest, quint16 wValue, quint16 wIndex, unsigned char *data, quint16 wLength, int &errcnt, QString &errstr) const;
-    void disableCS(quint8 channel, int &errcnt, QString &errstr) const;
-    void disableSPIDelays(quint8 channel, int &errcnt, QString &errstr) const;
-    void enableCS(quint8 channel, int &errcnt, QString &errstr) const;
-    quint8 getClockDivider(int &errcnt, QString &errstr) const;
-    bool getCS(quint8 channel, int &errcnt, QString &errstr) const;
-    EventCounter getEventCounter(int &errcnt, QString &errstr) const;
-    quint8 getFIFOThreshold(int &errcnt, QString &errstr) const;
-    bool getGPIO0(int &errcnt, QString &errstr) const;
-    bool getGPIO1(int &errcnt, QString &errstr) const;
-    bool getGPIO2(int &errcnt, QString &errstr) const;
-    bool getGPIO3(int &errcnt, QString &errstr) const;
-    bool getGPIO4(int &errcnt, QString &errstr) const;
-    bool getGPIO5(int &errcnt, QString &errstr) const;
-    bool getGPIO6(int &errcnt, QString &errstr) const;
-    bool getGPIO7(int &errcnt, QString &errstr) const;
-    bool getGPIO8(int &errcnt, QString &errstr) const;
-    bool getGPIO9(int &errcnt, QString &errstr) const;
-    bool getGPIO10(int &errcnt, QString &errstr) const;
-    quint16 getGPIOs(int &errcnt, QString &errstr) const;
-    quint16 getLockWord(int &errcnt, QString &errstr) const;
-    QString getManufacturerDesc(int &errcnt, QString &errstr) const;
-    PinConfig getPinConfig(int &errcnt, QString &errstr) const;
-    QString getProductDesc(int &errcnt, QString &errstr) const;
-    QString getSerialDesc(int &errcnt, QString &errstr) const;
-    SiliconVersion getSiliconVersion(int &errcnt, QString &errstr) const;
-    SPIDelays getSPIDelays(quint8 channel, int &errcnt, QString &errstr) const;
-    SPIMode getSPIMode(quint8 channel, int &errcnt, QString &errstr) const;
-    USBConfig getUSBConfig(int &errcnt, QString &errstr) const;
+    bool disconnected() const;
     bool isOpen() const;
-    bool isOTPBlank(int &errcnt, QString &errstr) const;
-    bool isOTPLocked(int &errcnt, QString &errstr) const;
-    bool isRTRActive(int &errcnt, QString &errstr) const;
-    void lockOTP(int &errcnt, QString &errstr) const;
-    void reset(int &errcnt, QString &errstr) const;
-    void selectCS(quint8 channel, int &errcnt, QString &errstr) const;
-    void setClockDivider(quint8 value, int &errcnt, QString &errstr) const;
-    void setEventCounter(const EventCounter &evcntr, int &errcnt, QString &errstr) const;
-    void setFIFOThreshold(quint8 threshold, int &errcnt, QString &errstr) const;
-    void setGPIO0(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO1(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO2(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO3(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO4(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO5(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO6(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO7(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO8(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO9(bool value, int &errcnt, QString &errstr) const;
-    void setGPIO10(bool value, int &errcnt, QString &errstr) const;
-    void setGPIOs(quint16 bmValues, quint16 bmMask, int &errcnt, QString &errstr) const;
-    void stopRTR(int &errcnt, QString &errstr) const;
-    void writeLockWord(quint16 word, int &errcnt, QString &errstr) const;
-    void writeManufacturerDesc(const QString &manufacturer, int &errcnt, QString &errstr) const;
-    void writePinConfig(const PinConfig &config, int &errcnt, QString &errstr) const;
-    void writeProductDesc(const QString &product, int &errcnt, QString &errstr) const;
-    void writeSerialDesc(const QString &serial, int &errcnt, QString &errstr) const;
-    void writeUSBConfig(const USBConfig &config, quint8 mask, int &errcnt, QString &errstr) const;
 
+    void bulkTransfer(quint8 endpointAddr, unsigned char *data, int length, int *transferred, int &errcnt, QString &errstr);
     void close();
+    void configureGPIO(quint8 pin, quint8 mode, bool value, int &errcnt, QString &errstr);
+    void configureSPIDelays(quint8 channel, const SPIDelays &delays, int &errcnt, QString &errstr);
+    void configureSPIMode(quint8 channel, const SPIMode &mode, int &errcnt, QString &errstr);
+    void controlTransfer(quint8 bmRequestType, quint8 bRequest, quint16 wValue, quint16 wIndex, unsigned char *data, quint16 wLength, int &errcnt, QString &errstr);
+    void disableCS(quint8 channel, int &errcnt, QString &errstr);
+    void disableSPIDelays(quint8 channel, int &errcnt, QString &errstr);
+    void enableCS(quint8 channel, int &errcnt, QString &errstr);
+    quint8 getClockDivider(int &errcnt, QString &errstr);
+    bool getCS(quint8 channel, int &errcnt, QString &errstr);
+    quint8 getEndpointInAddr(int &errcnt, QString &errstr);
+    quint8 getEndpointOutAddr(int &errcnt, QString &errstr);
+    EventCounter getEventCounter(int &errcnt, QString &errstr);
+    quint8 getFIFOThreshold(int &errcnt, QString &errstr);
+    bool getGPIO0(int &errcnt, QString &errstr);
+    bool getGPIO1(int &errcnt, QString &errstr);
+    bool getGPIO2(int &errcnt, QString &errstr);
+    bool getGPIO3(int &errcnt, QString &errstr);
+    bool getGPIO4(int &errcnt, QString &errstr);
+    bool getGPIO5(int &errcnt, QString &errstr);
+    bool getGPIO6(int &errcnt, QString &errstr);
+    bool getGPIO7(int &errcnt, QString &errstr);
+    bool getGPIO8(int &errcnt, QString &errstr);
+    bool getGPIO9(int &errcnt, QString &errstr);
+    bool getGPIO10(int &errcnt, QString &errstr);
+    quint16 getGPIOs(int &errcnt, QString &errstr);
+    quint16 getLockWord(int &errcnt, QString &errstr);
+    QString getManufacturerDesc(int &errcnt, QString &errstr);
+    PinConfig getPinConfig(int &errcnt, QString &errstr);
+    QString getProductDesc(int &errcnt, QString &errstr);
+    PROMConfig getPROMConfig(int &errcnt, QString &errstr);
+    QString getSerialDesc(int &errcnt, QString &errstr);
+    SiliconVersion getSiliconVersion(int &errcnt, QString &errstr);
+    SPIDelays getSPIDelays(quint8 channel, int &errcnt, QString &errstr);
+    SPIMode getSPIMode(quint8 channel, int &errcnt, QString &errstr);
+    quint8 getTransferPriority(int &errcnt, QString &errstr);
+    USBConfig getUSBConfig(int &errcnt, QString &errstr);
+    bool isOTPBlank(int &errcnt, QString &errstr);
+    bool isOTPLocked(int &errcnt, QString &errstr);
+    bool isRTRActive(int &errcnt, QString &errstr);
+    void lockOTP(int &errcnt, QString &errstr);
     int open(quint16 vid, quint16 pid, const QString &serial);
+    void reset(int &errcnt, QString &errstr);
+    void selectCS(quint8 channel, int &errcnt, QString &errstr);
+    void setClockDivider(quint8 value, int &errcnt, QString &errstr);
+    void setEventCounter(const EventCounter &evcntr, int &errcnt, QString &errstr);
+    void setFIFOThreshold(quint8 threshold, int &errcnt, QString &errstr);
+    void setGPIO0(bool value, int &errcnt, QString &errstr);
+    void setGPIO1(bool value, int &errcnt, QString &errstr);
+    void setGPIO2(bool value, int &errcnt, QString &errstr);
+    void setGPIO3(bool value, int &errcnt, QString &errstr);
+    void setGPIO4(bool value, int &errcnt, QString &errstr);
+    void setGPIO5(bool value, int &errcnt, QString &errstr);
+    void setGPIO6(bool value, int &errcnt, QString &errstr);
+    void setGPIO7(bool value, int &errcnt, QString &errstr);
+    void setGPIO8(bool value, int &errcnt, QString &errstr);
+    void setGPIO9(bool value, int &errcnt, QString &errstr);
+    void setGPIO10(bool value, int &errcnt, QString &errstr);
+    void setGPIOs(quint16 bmValues, quint16 bmMask, int &errcnt, QString &errstr);
+    QVector<quint8> spiRead(quint32 bytesToRead, quint8 endpointInAddr, quint8 endpointOutAddr, int &errcnt, QString &errstr);
+    QVector<quint8> spiRead(quint32 bytesToRead, int &errcnt, QString &errstr);
+    void spiWrite(const QVector<quint8> &data, quint8 endpointOutAddr, int &errcnt, QString &errstr);
+    void spiWrite(const QVector<quint8> &data, int &errcnt, QString &errstr);
+    void stopRTR(int &errcnt, QString &errstr);
+    void writeLockWord(quint16 word, int &errcnt, QString &errstr);
+    void writeManufacturerDesc(const QString &manufacturer, int &errcnt, QString &errstr);
+    void writePinConfig(const PinConfig &config, int &errcnt, QString &errstr);
+    void writeProductDesc(const QString &product, int &errcnt, QString &errstr);
+    void writePROMConfig(const PROMConfig &config, int &errcnt, QString &errstr);
+    void writeSerialDesc(const QString &serial, int &errcnt, QString &errstr);
+    void writeUSBConfig(const USBConfig &config, quint8 mask, int &errcnt, QString &errstr);
 
     static QStringList listDevices(quint16 vid, quint16 pid, int &errcnt, QString &errstr);
 };
