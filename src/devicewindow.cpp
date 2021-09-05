@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.1 for Debian Linux
+/* ITUSB1 Manager - Version 3.2 for Debian Linux
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -24,10 +24,15 @@
 #include <QTextStream>
 #include <QThread>
 #include "aboutdialog.h"
+#include "cp2130.h"
 #include "datapoint.h"
 #include "informationdialog.h"
 #include "devicewindow.h"
 #include "ui_devicewindow.h"
+
+// Definitions
+const int ENUM_RETRIES = 10;  // Number of enumeration retries
+const int ERR_LIMIT = 10;     // Error limit
 
 DeviceWindow::DeviceWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -53,13 +58,13 @@ DeviceWindow::~DeviceWindow()
 void DeviceWindow::openDevice(const QString &serialstr)
 {
     int err = device_.open(serialstr);
-    if (err == 1) {  // Failed to initialize libusb
+    if (err == ITUSB1Device::ERROR_INIT) {  // Failed to initialize libusb
         QMessageBox::critical(this, tr("Critical Error"), tr("Could not initialize libusb.\n\nThis is a critical error and execution will be aborted."));
         exit(EXIT_FAILURE);  // This error is critical because libusb failed to initialize
-    } else if (err == 2) {  // Failed to find device
+    } else if (err == ITUSB1Device::ERROR_NOT_FOUND) {  // Failed to find device
         QMessageBox::critical(this, tr("Error"), tr("Could not find device."));
         this->deleteLater();  // Close window after the subsequent show() call
-    } else if (err == 3) {  // Failed to claim interface
+    } else if (err == ITUSB1Device::ERROR_BUSY) {  // Failed to claim interface
         QMessageBox::critical(this, tr("Error"), tr("Device is currently unavailable.\n\nPlease confirm that the device is not in use."));
         this->deleteLater();  // Close window after the subsequent show() call
     } else {
@@ -320,20 +325,29 @@ void DeviceWindow::logDataPoint(float current, bool up, bool ud, bool oc)
 // Checks for errors and validates (or ultimately halts) device operations (added in version 3.0, as a refactor)
 bool DeviceWindow::opCheck(const QString &op, int errcnt, QString errstr)
 {
-    bool retval = true;
+    bool retval;
     if (errcnt > 0) {
-        errstr.chop(1);  // Remove the last character, which is always a newline
-        QMessageBox::critical(this, tr("Error"), tr("%1 operation returned the following error(s):\n– %2", "", errcnt).arg(op, errstr.replace("\n", "\n– ")));
-        erracc_ += errcnt;
-        if (erracc_ > 10) {  // If the session accumulated more than 10 errors (this is validateErrors(), in essence)
+        if (device_.disconnected()) {  // Added in version 3.2
             timer_->stop();  // This prevents further errors
-            QMessageBox::critical(this, tr("Error"), tr("Detected too many errors. Device may not be properly connected.\n\nThe device window will be disabled."));
+            QMessageBox::critical(this, tr("Error"), tr("Device disconnected.\n\nThe corresponding window will be disabled."));
             disableView();  // Disable device window
-            device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful
-            device_.close();  // Ensure that the device is freed, even if the previous device reset is not effective (device_.reset() also frees the device interface, as an effect of re-enumeration)
-            // Since version 3.0, it is essential that device_.close() is called, since some important checks rely on device_.isOpen() to retrieve a proper status
+            device_.close();
+        } else {
+            errstr.chop(1);  // Remove the last character, which is always a newline
+            QMessageBox::critical(this, tr("Error"), tr("%1 operation returned the following error(s):\n– %2", "", errcnt).arg(op, errstr.replace("\n", "\n– ")));
+            erracc_ += errcnt;
+            if (erracc_ > ERR_LIMIT) {  // If the session accumulated more errors than the limit set by "ERR_LIMIT" [10] (this is validateErrors(), in essence)
+                timer_->stop();  // Again, this prevents further errors
+                QMessageBox::critical(this, tr("Error"), tr("Detected too many errors.\n\nThe device window will be disabled."));
+                disableView();  // Disable device window
+                device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful
+                device_.close();  // Ensure that the device is freed, even if the previous device reset is not effective (device_.reset() also frees the device interface, as an effect of re-enumeration)
+                // Since version 3.0, it is essential that device_.close() is called, since some important checks rely on device_.isOpen() to retrieve a proper status
+            }
         }
         retval = false;  // Failed check
+    } else {
+        retval = true;  // Passed check
     }
     return retval;
 }
@@ -352,7 +366,7 @@ void DeviceWindow::resetDevice()
     if (device_.isOpen()) {  // If opCheck() passes, thus, not closing the device (condition refactored in version 3.0, because windowEnabled_ was found to be redundant and, therefore, removed)
         device_.close();  // Important! - This should be done always, even if the previous reset operation shows an error, because an error doesn't mean that a device reset was not effected
         int err;
-        for (int i = 0; i < 10; ++i) {  // Verify enumeration 10 times
+        for (int i = 0; i < ENUM_RETRIES; ++i) {  // Verify enumeration according to the number of times set by "ENUM_RETRIES" [10]
             QThread::msleep(500);  // Wait 500ms each time
             err = device_.open(serialstr_);
             if (err != 2) {  // Retry only if the device was not found yet (as it may take some time to enumerate)
@@ -423,9 +437,10 @@ void DeviceWindow::setupDevice()
     QString errstr;
     device_.setup(errcnt, errstr);
     if (errcnt > 0) {
+        device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful (device is reset before showing the dialog since version 3.2)
+        device_.close();  // Close the device (implemented here since version 3.2)
         errstr.chop(1);  // Remove the last character, which is always a newline
         QMessageBox::critical(this, tr("Error"), tr("Setup operation returned the following error(s):\n– %1\n\nPlease try accessing the device again.", "", errcnt).arg(errstr.replace("\n", "\n– ")));
-        device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful
         this->deleteLater();  // In a context where the window is already visible, it has the same effect as this->close()
     }
 }

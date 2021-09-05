@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.1 for Debian Linux
+/* ITUSB1 Manager - Version 3.2 for Debian Linux
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -26,9 +26,10 @@
 #include <QElapsedTimer>
 #include <QLabel>
 #include <QMainWindow>
+#include <QString>
 #include <QTimer>
 #include "datalog.h"
-#include "itusb1device.h"  // Also includes "cp2130.h"
+#include "itusb1device.h"
 #include "metrics.h"
 
 namespace Ui {
@@ -72,7 +73,7 @@ private:
     DataLog log_;
     ITUSB1Device device_;
     Metrics metrics_;
-    QElapsedTimer time_;  // QTime start() and elapsed() are now obsolete (version 3.1)
+    QElapsedTimer time_;  // QTime::start() and QTime::elapsed() are now obsolete (version 3.1)
     QLabel *labelLog_, *labelMeas_, *labelTime_;
     QString filepath_, serialstr_;
     QTimer *timer_;
