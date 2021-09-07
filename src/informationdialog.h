@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.1 for Debian Linux
+/* ITUSB1 Manager - Version 3.2 for Debian Linux
    Copyright (c) 2020-2021 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -34,7 +34,7 @@ class InformationDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit InformationDialog(QWidget *parent = 0);
+    explicit InformationDialog(QWidget *parent = nullptr);
     ~InformationDialog();
     void setManufacturerLabelText(const QString &manufacturerstr);
     void setMaxPowerLabelText(quint8 maxpower);
