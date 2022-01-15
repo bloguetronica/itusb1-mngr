@@ -33,8 +33,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     cp2130.cpp \
     datalog.cpp \
-        main.cpp \
-        mainwindow.cpp \
+    main.cpp \
+    mainwindow.cpp \
     itusb1device.cpp \
     libusb-extra.c \
     devicewindow.cpp \
@@ -46,7 +46,7 @@ HEADERS += \
     cp2130.h \
     datalog.h \
     datapoint.h \
-        mainwindow.h \
+    mainwindow.h \
     itusb1device.h \
     libusb-extra.h \
     devicewindow.h \
@@ -55,7 +55,7 @@ HEADERS += \
     metrics.h
 
 FORMS += \
-        mainwindow.ui \
+    mainwindow.ui \
     devicewindow.ui \
     aboutdialog.ui \
     informationdialog.ui
