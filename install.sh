@@ -48,6 +48,8 @@ cp -f src/translations/itusb1-mngr_en.qm /usr/local/src/itusb1-mngr/translations
 cp -f src/translations/itusb1-mngr_en.ts /usr/local/src/itusb1-mngr/translations/.
 cp -f src/translations/itusb1-mngr_en_US.qm /usr/local/src/itusb1-mngr/translations/.
 cp -f src/translations/itusb1-mngr_en_US.ts /usr/local/src/itusb1-mngr/translations/.
+cp -f src/translations/itusb1-mngr_pt.qm /usr/local/src/itusb1-mngr/translations/.
+cp -f src/translations/itusb1-mngr_pt.ts /usr/local/src/itusb1-mngr/translations/.
 cp -f src/translations/itusb1-mngr_pt_PT.qm /usr/local/src/itusb1-mngr/translations/.
 cp -f src/translations/itusb1-mngr_pt_PT.ts /usr/local/src/itusb1-mngr/translations/.
 echo Building and installing application...
