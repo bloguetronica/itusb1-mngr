@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 3.2 for Debian Linux
-   Copyright (c) 2020-2021 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.3 for Debian Linux
+   Copyright (c) 2020-2022 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free
@@ -72,6 +72,8 @@ void DeviceWindow::openDevice(const QString &serialstr)
         setupDevice();  // Necessary in order to get correct readings
         this->setWindowTitle(tr("ITUSB1 USB Test Switch (S/N: %1)").arg(serialstr_));  // Change implemented in version 3.0
         timer_ = new QTimer(this);  // Create a timer
+        QObject::connect(&device_, SIGNAL(switchedUSBData()), this, SLOT(update()));
+        QObject::connect(&device_, SIGNAL(switchedUSBPower()), this, SLOT(update()));
         QObject::connect(timer_, SIGNAL(timeout()), this, SLOT(update()));
         timer_->start(200);
         time_.start();  // Start counting the elapsed time from this point
@@ -221,12 +223,7 @@ void DeviceWindow::on_pushButtonAttach_clicked()
     int errcnt = 0;
     QString errstr;
     device_.attach(errcnt, errstr);
-    if (opCheck(tr("attach-op"), errcnt, errstr)) {  // If error check passes  (the string "attach-op" should be translated to "Attach")
-        // Added in version 3.0, for improved responsiveness
-        ui->checkBoxPower->setChecked(true);
-        ui->checkBoxData->setChecked(true);
-        // Note that update() will always confirm the true status of the lines
-    }
+    opCheck(tr("attach-op"), errcnt, errstr);
 }
 
 void DeviceWindow::on_pushButtonClear_clicked()
@@ -240,12 +237,7 @@ void DeviceWindow::on_pushButtonDetach_clicked()
     int errcnt = 0;
     QString errstr;
     device_.detach(errcnt, errstr);
-    if (opCheck(tr("detach-op"), errcnt, errstr)) {  // If error check passes (the string "detach-op" should be translated to "Detach")
-        // Added in version 3.0, for improved responsiveness
-        ui->checkBoxPower->setChecked(false);
-        ui->checkBoxData->setChecked(false);
-        // Note that, as before, update() will always confirm the true status of the lines
-    }
+    opCheck(tr("detach-op"), errcnt, errstr);
 }
 
 void DeviceWindow::on_pushButtonReset_clicked()
@@ -373,13 +365,13 @@ void DeviceWindow::resetDevice()
                 break;
             }
         }
-        if (err == 1) {  // Failed to initialize libusb
+        if (err == ITUSB1Device::ERROR_INIT) {  // Failed to initialize libusb
             QMessageBox::critical(this, tr("Critical Error"), tr("Could not reinitialize libusb.\n\nThis is a critical error and execution will be aborted."));
             exit(EXIT_FAILURE);  // This error is critical because libusb failed to initialize
-        } else if (err == 2) {  // Failed to find device
+        } else if (err == ITUSB1Device::ERROR_NOT_FOUND) {  // Failed to find device
             QMessageBox::critical(this, tr("Error"), tr("Device disconnected."));
             this->close();  // Close window
-        } else if (err == 3) {  // Failed to claim interface
+        } else if (err == ITUSB1Device::ERROR_BUSY) {  // Failed to claim interface
             QMessageBox::critical(this, tr("Error"), tr("Device ceased to be available.\n\nPlease verify that the device is not in use by another application."));
             this->close();  // Close window
         } else {
@@ -437,10 +429,15 @@ void DeviceWindow::setupDevice()
     QString errstr;
     device_.setup(errcnt, errstr);
     if (errcnt > 0) {
-        device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful (device is reset before showing the dialog since version 3.2)
-        device_.close();  // Close the device (implemented here since version 3.2)
-        errstr.chop(1);  // Remove the last character, which is always a newline
-        QMessageBox::critical(this, tr("Error"), tr("Setup operation returned the following error(s):\n– %1\n\nPlease try accessing the device again.", "", errcnt).arg(errstr.replace("\n", "\n– ")));
+        if (device_.disconnected()) {  // Verification added in version 3.3
+            device_.close();
+            QMessageBox::critical(this, tr("Error"), tr("Device disconnected.\n\nPlease reconnect it and try again."));
+        } else {
+            device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful (device is reset before showing the dialog since version 3.2)
+            device_.close();  // Close the device (implemented here since version 3.2)
+            errstr.chop(1);  // Remove the last character, which is always a newline
+            QMessageBox::critical(this, tr("Error"), tr("Setup operation returned the following error(s):\n– %1\n\nPlease try accessing the device again.", "", errcnt).arg(errstr.replace("\n", "\n– ")));
+        }
         this->deleteLater();  // In a context where the window is already visible, it has the same effect as this->close()
     }
 }

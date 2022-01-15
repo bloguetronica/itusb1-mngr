@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 3.2 for Debian Linux
-   Copyright (c) 2020-2021 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.3 for Debian Linux
+   Copyright (c) 2020-2022 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free
@@ -40,7 +40,7 @@ void InformationDialog::setManufacturerLabelText(const QString &manufacturerstr)
     QString manufacturer = manufacturerstr;
     if (manufacturerstr.size() > 22) {
         manufacturer.truncate(20);
-        manufacturer.append("...");
+        manufacturer += "...";
     }
     if (manufacturerstr != "Bloguetrónica") {
         ui->labelManufacturer->setStyleSheet("color: red;");
@@ -52,7 +52,7 @@ void InformationDialog::setManufacturerLabelText(const QString &manufacturerstr)
 void InformationDialog::setMaxPowerLabelText(quint8 maxpower)
 {
     QString maxpowerstr = QString::number(2 * maxpower);  // Maximum current value (reported as being the maximum power consumption by the USB-IF)
-    maxpowerstr.append(QString(" [0x%1]").arg(maxpower, 2, 16, QChar('0')));  // Append the bMaxPower descriptor value between brackets
+    maxpowerstr += QString(" [0x%1]").arg(maxpower, 2, 16, QChar('0'));  // Append the bMaxPower descriptor value between brackets
     ui->labelMaxPower->setText(maxpowerstr);
 }
 
@@ -62,7 +62,7 @@ void InformationDialog::setProductLabelText(const QString &productstr)
     QString product = productstr;
     if (productstr.size() > 22) {
         product.truncate(20);
-        product.append("...");
+        product += "...";
     }
     if (productstr != "ITUSB1 USB Test Switch") {
         ui->labelProduct->setStyleSheet("color: red;");
@@ -75,12 +75,12 @@ void InformationDialog::setRevisionLabelText(quint8 majrelease, quint8 minreleas
 {
     QString revision;
     if (majrelease > 1 && majrelease <= 27) {
-        revision.append(QChar(majrelease + 'A' - 2));  // Append major revision letter (a major release number value of 2 corresponds to the letter "A" and so on)
+        revision = QChar(majrelease + 'A' - 2);  // Append major revision letter (a major release number value of 2 corresponds to the letter "A" and so on)
     }
     if (majrelease == 1 || minrelease != 0) {
-        revision.append(QString::number(minrelease));  // Append minor revision number
+        revision += QString::number(minrelease);  // Append minor revision number
     }
-    revision.append(QString(" [0x%1]").arg(majrelease << 8 | minrelease, 4, 16, QChar('0')));  // Append the calculated bcdDevice descriptor value between brackets
+    revision += QString(" [0x%1]").arg(majrelease << 8 | minrelease, 4, 16, QChar('0'));  // Append the calculated bcdDevice descriptor value between brackets
     if (majrelease == 0 || majrelease > 27) {
         ui->labelRevision->setStyleSheet("color: red;");
     }
@@ -93,7 +93,7 @@ void InformationDialog::setSerialLabelText(const QString &serialstr)
     QString serial = serialstr;
     if (serialstr.size() > 22) {
         serial.truncate(20);
-        serial.append("...");
+        serial += "...";
     }
     if (!serialstr.startsWith("IU1-") || serialstr.size() != 12) {
         ui->labelSerial->setStyleSheet("color: red;");

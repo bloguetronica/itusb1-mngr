@@ -1,6 +1,6 @@
-/* ITUSB1 device class for Qt - Version 3.0.1
+/* ITUSB1 device class for Qt - Version 3.2.0
    Requires CP2130 class for Qt version 2.0.0 or later
-   Copyright (c) 2020-2021 Samuel Lourenço
+   Copyright (c) 2020-2022 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
    under the terms of the GNU Lesser General Public License as published by
@@ -23,12 +23,15 @@
 #define ITUSB1DEVICE_H
 
 // Includes
+#include <QObject>
 #include <QString>
 #include <QStringList>
 #include "cp2130.h"
 
-class ITUSB1Device
+class ITUSB1Device : public QObject  // Inherits from QObject since version 3.2.0
 {
+    Q_OBJECT
+
 private:
     CP2130 cp2130_;
 
@@ -51,7 +54,9 @@ public:
     void attach(int &errcnt, QString &errstr);
     void close();
     void detach(int &errcnt, QString &errstr);
+    CP2130::SiliconVersion getCP2130SiliconVersion(int &errcnt, QString &errstr);
     float getCurrent(int &errcnt, QString &errstr);
+    QString getHardwareRevision(int &errcnt, QString &errstr);
     QString getManufacturerDesc(int &errcnt, QString &errstr);
     bool getOvercurrentStatus(int &errcnt, QString &errstr);
     QString getProductDesc(int &errcnt, QString &errstr);
@@ -66,7 +71,12 @@ public:
     void switchUSBData(bool value, int &errcnt, QString &errstr);
     void switchUSBPower(bool value, int &errcnt, QString &errstr);
 
+    static QString hardwareRevision(const CP2130::USBConfig &config);
     static QStringList listDevices(int &errcnt, QString &errstr);
+
+signals:
+    void switchedUSBData();
+    void switchedUSBPower();
 };
 
 #endif  // ITUSB1DEVICE_H
