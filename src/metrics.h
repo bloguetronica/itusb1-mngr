@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 3.2 for Debian Linux
-   Copyright (c) 2020-2021 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.3 for Debian Linux
+   Copyright (c) 2020-2022 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free

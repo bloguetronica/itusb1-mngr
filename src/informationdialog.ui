@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>391</width>
-    <height>146</height>
+    <height>145</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>391</width>
-    <height>146</height>
+    <height>145</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>391</width>
-    <height>146</height>
+    <height>145</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -215,12 +215,12 @@
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>195</x>
+     <y>119</y>
     </hint>
     <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
+     <x>195</x>
+     <y>72</y>
     </hint>
    </hints>
   </connection>

@@ -1,5 +1,5 @@
-/* ITUSB1 Manager - Version 3.2 for Debian Linux
-   Copyright (c) 2020-2021 Samuel Lourenço
+/* ITUSB1 Manager - Version 3.3 for Debian Linux
+   Copyright (c) 2020-2022 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the Free
@@ -50,11 +50,11 @@ QString DataLog::toCSVString() const
 {
     QString csvstr = "Time (s),Current (mA),USB power,USB data,OC flag\n";
     for (DataPoint datapt : dataPoints_) {
-        csvstr.append(QString("%1,").arg(datapt.time, 0, 'f', 3));
-        csvstr.append(QString("%1,").arg(datapt.curr, 0, 'f', 1));
-        csvstr.append(QString("%1,").arg(datapt.up));
-        csvstr.append(QString("%1,").arg(datapt.ud));
-        csvstr.append(QString("%1\n").arg(datapt.oc));
+        csvstr += QString("%1,").arg(datapt.time, 0, 'f', 3);
+        csvstr += QString("%1,").arg(datapt.curr, 0, 'f', 1);
+        csvstr += QString("%1,").arg(datapt.up);
+        csvstr += QString("%1,").arg(datapt.ud);
+        csvstr += QString("%1\n").arg(datapt.oc);
     }
     return csvstr;
 }
@@ -62,7 +62,7 @@ QString DataLog::toCSVString() const
 // Append new data point
 void DataLog::append(const DataPoint &datapt)
 {
-    dataPoints_.append(datapt);
+    dataPoints_ += datapt;
     newData_ = true;
 }
 

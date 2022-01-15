@@ -35,6 +35,8 @@ A list of relevant files follows:
 – translations/itusb1-mngr_en.ts;
 – translations/itusb1-mngr_en_US.qm;
 – translations/itusb1-mngr_en_US.ts;
+– translations/itusb1-mngr_pt.qm;
+– translations/itusb1-mngr_pt.ts;
 – translations/itusb1-mngr_pt_PT.qm;
 – translations/itusb1-mngr_pt_PT.ts.
 
