@@ -1,5 +1,5 @@
-/* ITUSB1 device class for Qt - Version 3.2.0
-   Requires CP2130 class for Qt version 2.0.0 or later
+/* ITUSB1 device class for Qt - Version 3.3.1
+   Requires CP2130 class for Qt version 2.1.0 or later
    Copyright (c) 2020-2022 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -26,12 +26,14 @@
 #include "itusb1device.h"
 
 // Definitions
+const quint8 EPIN = 0x82;    // Address of endpoint assuming the IN direction
+const quint8 EPOUT = 0x01;   // Address of endpoint assuming the OUT direction
 const size_t N_SAMPLES = 5;  // Number of samples per measurement, applicable to getCurrent()
 
 // Private convenience function that is used to get the raw current measurement reading from the LTC2312 ADC
 quint16 ITUSB1Device::getRawCurrent(int &errcnt, QString &errstr)
 {
-    QVector<quint8> read = cp2130_.spiRead(2, 0x82, 0x01, errcnt, errstr);
+    QVector<quint8> read = cp2130_.spiRead(2, EPIN, EPOUT, errcnt, errstr);
     return read.size() == 2 ? static_cast<quint16>(read[0] << 4 | read[1] >> 4) : 0;  // It is important to check if the size of the returned vector matches the number of expected bytes - If not, return zero!
 }
 
@@ -155,7 +157,8 @@ bool ITUSB1Device::getUSBPowerStatus(int &errcnt, QString &errstr)
     return !cp2130_.getGPIO1(errcnt, errstr);  // Return the current state of the negated !UPEN signal
 }
 
-// Opens the device having the given serial number, and assigns its handle
+// Opens a device and assigns its handle
+// The serial number is optional since version 3.3.0
 int ITUSB1Device::open(const QString &serial)
 {
     return cp2130_.open(VID, PID, serial);

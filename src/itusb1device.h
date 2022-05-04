@@ -1,5 +1,5 @@
-/* ITUSB1 device class for Qt - Version 3.2.0
-   Requires CP2130 class for Qt version 2.0.0 or later
+/* ITUSB1 device class for Qt - Version 3.3.1
+   Requires CP2130 class for Qt version 2.1.0 or later
    Copyright (c) 2020-2022 Samuel Lourenço
 
    This library is free software: you can redistribute it and/or modify it
@@ -64,7 +64,7 @@ public:
     CP2130::USBConfig getUSBConfig(int &errcnt, QString &errstr);
     bool getUSBDataStatus(int &errcnt, QString &errstr);
     bool getUSBPowerStatus(int &errcnt, QString &errstr);
-    int open(const QString &serial);
+    int open(const QString &serial = QString());
     void reset(int &errcnt, QString &errstr);
     void setup(int &errcnt, QString &errstr);
     void switchUSB(bool value, int &errcnt, QString &errstr);
