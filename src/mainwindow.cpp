@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.3 for Debian Linux
+/* ITUSB1 Manager - Version 3.4 for Debian Linux
    Copyright (c) 2020-2022 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
