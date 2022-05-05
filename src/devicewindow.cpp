@@ -366,19 +366,22 @@ void DeviceWindow::resetDevice()
                 break;
             }
         }
-        if (err == ITUSB1Device::ERROR_INIT) {  // Failed to initialize libusb
-            QMessageBox::critical(this, tr("Critical Error"), tr("Could not reinitialize libusb.\n\nThis is a critical error and execution will be aborted."));
-            exit(EXIT_FAILURE);  // This error is critical because libusb failed to initialize
-        } else if (err == ITUSB1Device::ERROR_NOT_FOUND) {  // Failed to find device
-            QMessageBox::critical(this, tr("Error"), tr("Device disconnected."));
-            this->close();  // Close window
-        } else if (err == ITUSB1Device::ERROR_BUSY) {  // Failed to claim interface
-            QMessageBox::critical(this, tr("Error"), tr("Device ceased to be available.\n\nPlease verify that the device is not in use by another application."));
-            this->close();  // Close window
-        } else {
+        if (err == ITUSB1Device::SUCCESS) {  // Device was successfully reopened
             setupDevice();  // Necessary in order to get correct readings after a device reset
             erracc_ = 0;  // Zero the error count accumulator, since a new session gets started once the reset is done
             resetTimeCount();  // Reset time count
+        } else {
+            this->setEnabled(false);  // Added in version 3.4
+            if (err == ITUSB1Device::ERROR_INIT) {  // Failed to initialize libusb
+                QMessageBox::critical(this, tr("Critical Error"), tr("Could not reinitialize libusb.\n\nThis is a critical error and execution will be aborted."));
+                exit(EXIT_FAILURE);  // This error is critical because libusb failed to initialize
+            } else if (err == ITUSB1Device::ERROR_NOT_FOUND) {  // Failed to find device
+                QMessageBox::critical(this, tr("Error"), tr("Device disconnected."));
+                this->close();  // Close window
+            } else if (err == ITUSB1Device::ERROR_BUSY) {  // Failed to claim interface
+                QMessageBox::critical(this, tr("Error"), tr("Device ceased to be available.\n\nPlease verify that the device is not in use by another application."));
+                this->close();  // Close window
+            }
         }
     }
 }
