@@ -445,6 +445,18 @@
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>pushButtonAttach</tabstop>
+  <tabstop>pushButtonDetach</tabstop>
+  <tabstop>checkBoxPower</tabstop>
+  <tabstop>checkBoxData</tabstop>
+  <tabstop>pushButtonReset</tabstop>
+  <tabstop>radioButtonDisplayAct</tabstop>
+  <tabstop>radioButtonDisplayAvg</tabstop>
+  <tabstop>radioButtonDisplayMin</tabstop>
+  <tabstop>radioButtonDisplayMax</tabstop>
+  <tabstop>pushButtonClear</tabstop>
+ </tabstops>
  <resources>
   <include location="resources.qrc"/>
  </resources>

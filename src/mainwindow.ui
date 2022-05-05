@@ -124,6 +124,11 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>comboBoxDevices</tabstop>
+  <tabstop>pushButtonRefresh</tabstop>
+  <tabstop>pushButtonOpen</tabstop>
+ </tabstops>
  <resources>
   <include location="resources.qrc"/>
  </resources>
