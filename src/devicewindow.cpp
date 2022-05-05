@@ -58,16 +58,7 @@ DeviceWindow::~DeviceWindow()
 void DeviceWindow::openDevice(const QString &serialstr)
 {
     int err = device_.open(serialstr);
-    if (err == ITUSB1Device::ERROR_INIT) {  // Failed to initialize libusb
-        QMessageBox::critical(this, tr("Critical Error"), tr("Could not initialize libusb.\n\nThis is a critical error and execution will be aborted."));
-        exit(EXIT_FAILURE);  // This error is critical because libusb failed to initialize
-    } else if (err == ITUSB1Device::ERROR_NOT_FOUND) {  // Failed to find device
-        QMessageBox::critical(this, tr("Error"), tr("Could not find device."));
-        this->deleteLater();  // Close window after the subsequent show() call
-    } else if (err == ITUSB1Device::ERROR_BUSY) {  // Failed to claim interface
-        QMessageBox::critical(this, tr("Error"), tr("Device is currently unavailable.\n\nPlease confirm that the device is not in use."));
-        this->deleteLater();  // Close window after the subsequent show() call
-    } else {
+    if (err == ITUSB1Device::SUCCESS) {  // Device was successfully opened
         serialstr_ = serialstr;  // Valid serial number (added in version 2.0)
         setupDevice();  // Necessary in order to get correct readings
         this->setWindowTitle(tr("ITUSB1 USB Test Switch (S/N: %1)").arg(serialstr_));  // Change implemented in version 3.0
@@ -77,6 +68,16 @@ void DeviceWindow::openDevice(const QString &serialstr)
         QObject::connect(timer_, SIGNAL(timeout()), this, SLOT(update()));
         timer_->start(200);
         time_.start();  // Start counting the elapsed time from this point
+    } else if (err == ITUSB1Device::ERROR_INIT) {  // Failed to initialize libusb
+        QMessageBox::critical(this, tr("Critical Error"), tr("Could not initialize libusb.\n\nThis is a critical error and execution will be aborted."));
+        exit(EXIT_FAILURE);  // This error is critical because libusb failed to initialize
+    } else {
+        if (err == ITUSB1Device::ERROR_NOT_FOUND) {  // Failed to find device
+            QMessageBox::critical(this, tr("Error"), tr("Could not find device."));
+        } else if (err == ITUSB1Device::ERROR_BUSY) {  // Failed to claim interface
+            QMessageBox::critical(this, tr("Error"), tr("Device is currently unavailable.\n\nPlease confirm that the device is not in use."));
+        }
+        this->deleteLater();  // Close window after the subsequent show() call
     }
 }
 
