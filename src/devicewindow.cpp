@@ -361,7 +361,7 @@ void DeviceWindow::resetDevice()
         for (int i = 0; i < ENUM_RETRIES; ++i) {  // Verify enumeration according to the number of times set by "ENUM_RETRIES" [10]
             QThread::msleep(500);  // Wait 500ms each time
             err = device_.open(serialstr_);
-            if (err != 2) {  // Retry only if the device was not found yet (as it may take some time to enumerate)
+            if (err != ITUSB1Device::ERROR_NOT_FOUND) {  // Retry only if the device was not found yet (as it may take some time to enumerate)
                 break;
             }
         }
