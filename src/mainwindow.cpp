@@ -60,11 +60,7 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_comboBoxDevices_currentIndexChanged(int index)
 {
-    if (index == 0) {
-        ui->pushButtonOpen->setEnabled(false);
-    } else {
-        ui->pushButtonOpen->setEnabled(true);
-    }
+    ui->pushButtonOpen->setEnabled(index != 0);  // Simplified in version 3.4
 }
 
 void MainWindow::on_pushButtonOpen_clicked()
