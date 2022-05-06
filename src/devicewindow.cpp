@@ -322,20 +322,20 @@ bool DeviceWindow::opCheck(const QString &op, int errcnt, QString errstr)
     if (errcnt > 0) {
         if (device_.disconnected()) {  // Added in version 3.2
             timer_->stop();  // This prevents further errors
-            QMessageBox::critical(this, tr("Error"), tr("Device disconnected.\n\nThe corresponding window will be disabled."));
             disableView();  // Disable device window
             device_.close();
+            QMessageBox::critical(this, tr("Error"), tr("Device disconnected.\n\nPlease reconnect it and try again."));
         } else {
             errstr.chop(1);  // Remove the last character, which is always a newline
             QMessageBox::critical(this, tr("Error"), tr("%1 operation returned the following error(s):\n– %2", "", errcnt).arg(op, errstr.replace("\n", "\n– ")));
             erracc_ += errcnt;
             if (erracc_ > ERR_LIMIT) {  // If the session accumulated more errors than the limit set by "ERR_LIMIT" [10] (this is validateErrors(), in essence)
                 timer_->stop();  // Again, this prevents further errors
-                QMessageBox::critical(this, tr("Error"), tr("Detected too many errors.\n\nThe device window will be disabled."));
                 disableView();  // Disable device window
                 device_.reset(errcnt, errstr);  // Try to reset the device for sanity purposes, but don't check if it was successful
                 device_.close();  // Ensure that the device is freed, even if the previous device reset is not effective (device_.reset() also frees the device interface, as an effect of re-enumeration)
                 // Since version 3.0, it is essential that device_.close() is called, since some important checks rely on device_.isOpen() to retrieve a proper status
+                QMessageBox::critical(this, tr("Error"), tr("Detected too many errors."));
             }
         }
         retval = false;  // Failed check
@@ -376,7 +376,7 @@ void DeviceWindow::resetDevice()
                 QMessageBox::critical(this, tr("Critical Error"), tr("Could not reinitialize libusb.\n\nThis is a critical error and execution will be aborted."));
                 exit(EXIT_FAILURE);  // This error is critical because libusb failed to initialize
             } else if (err == ITUSB1Device::ERROR_NOT_FOUND) {  // Failed to find device
-                QMessageBox::critical(this, tr("Error"), tr("Device disconnected."));
+                QMessageBox::critical(this, tr("Error"), tr("Device disconnected.\n\nPlease reconnect it and try again."));
                 this->close();  // Close window
             } else if (err == ITUSB1Device::ERROR_BUSY) {  // Failed to claim interface
                 QMessageBox::critical(this, tr("Error"), tr("Device ceased to be available.\n\nPlease verify that the device is not in use by another application."));
