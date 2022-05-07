@@ -13,8 +13,9 @@ In order to compile and install ITUSB1 Manager for the first time, all you
 have to do is to run "install.sh" by invoking "sudo ./install.sh" on a
 terminal window, after changing your working directory to the current one.
 This script will first obtain and install the required "build-essential",
-"libusb-1.0-0-dev" and "qt5-default" packages (if they are not installed yet).
-Then it will compile the application and move it to "/usr/local/bin/".
+"libusb-1.0-0-dev" and "qt5-default"/"qtbase5-dev" packages (if they are not
+installed yet). Then it will compile the application and move it to
+"/usr/local/bin/".
 
 Conversely, to uninstall, you should run "uninstall.sh" by invoking "sudo
 ./uninstall.sh", again on a terminal window after making sure that your

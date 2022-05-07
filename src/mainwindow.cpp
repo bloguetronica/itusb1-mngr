@@ -1,4 +1,4 @@
-/* ITUSB1 Manager - Version 3.3 for Debian Linux
+/* ITUSB1 Manager - Version 3.4 for Debian Linux
    Copyright (c) 2020-2022 Samuel Lourenço
 
    This program is free software: you can redistribute it and/or modify it
@@ -60,11 +60,7 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_comboBoxDevices_currentIndexChanged(int index)
 {
-    if (index == 0) {
-        ui->pushButtonOpen->setEnabled(false);
-    } else {
-        ui->pushButtonOpen->setEnabled(true);
-    }
+    ui->pushButtonOpen->setEnabled(index != 0);  // Simplified in version 3.4
 }
 
 void MainWindow::on_pushButtonOpen_clicked()
