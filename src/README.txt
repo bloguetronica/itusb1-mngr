@@ -41,12 +41,11 @@ A list of relevant files follows:
 – translations/itusb1-mngr_pt_PT.ts.
 
 In order to compile successfully, you must have the packages
-"build-essential", "libusb-1.0-0-dev" and "qt5-default" (or "qtbase5-dev"
-instead, in many recent distributions) already installed. Given that, if you
-wish to simply compile, change your working directory to the current one on a
-terminal window, and invoke "qmake", followed by "make" or "make all". Notice
-that invoking "qmake" is necessary to generate the Makefile, but only needs to
-be done once.
+"build-essential", "libusb-1.0-0-dev" and "qt5-default" (or "qtbase5-dev")
+already installed. Given that, if you wish to simply compile, change your
+working directory to the current one on a terminal window, and invoke "qmake",
+followed by "make" or "make all". Notice that invoking "qmake" is necessary to
+generate the Makefile, but only needs to be done once.
 
 You can also install using make. To do so, after invoking "qmake", you should
 simply run "sudo make install". If you wish to force a rebuild before the
