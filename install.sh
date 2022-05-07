@@ -5,6 +5,7 @@ apt-get -qq update
 apt-get -qq install build-essential
 apt-get -qq install libusb-1.0-0-dev
 apt-get -qq install qt5-default
+apt-get -qq install qtbase5-dev
 echo Copying source code files...
 mkdir -p /usr/local/src/itusb1-mngr/icons
 mkdir -p /usr/local/src/itusb1-mngr/misc
